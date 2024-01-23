@@ -25,12 +25,14 @@ clean:
 # Update docs
 docs:
 	@if command -v swag > /dev/null; then \
-	    swag init -g internal/server/routes.go; \
+			swag init --generalInfo routes.go --dir internal/server,internal/model;
+			sed -i 's/model.//g' docs/*; \
 	else \
 	    read -p "Go's 'swag' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
 	    if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
 	        go install github.com/swaggo/swag/cmd/swag@latest; \
-					swag init -g internal/server/routes.go; \
+					swag init --generalInfo routes.go --dir internal/server,internal/model;
+					sed -i 's/model.//g' docs/*; \
 	    else \
 	        echo "You chose not to install swag. Exiting..."; \
 	        exit 1; \
