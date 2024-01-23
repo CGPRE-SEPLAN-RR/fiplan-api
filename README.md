@@ -11,7 +11,17 @@ API para consulta dos dados do FIPLAN.
 - Ser extremamente intuitivo na sua utilização, de forma a gerar o menor número de dúvidas possível para os usuários
 - Atender às [especificações da OpenAPI](https://swagger.io/specification/), visando fornecer uma documentação simples, porém extensiva, via [Swagger](https://swagger.io/)
 
+### Tecnologia
+
+- Make
+- Go (>=1.21)
+    - [Air](https://github.com/cosmtrek/air) (Responsável pelo *live reload* do código)
+    - [Swag](https://github.com/swaggo/swag) (Responsável por gerar a documentação do Swagger a partir dos comentários no código)
+- Acesso a um banco de dados Oracle com as mesmas especificações do FIPLAN (Ou seja, acesso aos bancos de desenvolvimento, homologação ou produção do FIPLAN)
+
 ## Como Iniciar o Ambiente de Desenvolvimento
+
+As instruções abaixo assumem que o desenvolvedor está em um sistema Linux. Se esse não for o caso, utilize comandos equivalentes para o seu sistema.
 
 1. Clone o repositório
 
@@ -78,7 +88,7 @@ make build
 make run
 ```
 
-- Rodar a aplicação com *hot reload*
+- Rodar a aplicação com *live reload*
 
 ```bash
 make watch
