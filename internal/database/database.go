@@ -10,10 +10,14 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/sijms/go-ora/v2"
+
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal"
 )
 
 type Service interface {
 	Health() map[string]string
+	Query(string, ...any) (*sql.Rows, error)
+	QueryRow(string, ...any) *sql.Row
 }
 
 type service struct {
@@ -51,7 +55,13 @@ func (s *service) Health() map[string]string {
 		log.Fatalf(fmt.Sprintf("O banco de dados está caído: %v", err))
 	}
 
-	return map[string]string{
-		"message": "O banco de dados está saudável",
-	}
+	return internal.BasicResponse("O banco de dados está saudável")
+}
+
+func (s *service) Query(query string, args ...any) (*sql.Rows, error) {
+	return s.db.Query(query, args)
+}
+
+func (s *service) QueryRow(query string, args ...any) *sql.Row {
+	return s.db.QueryRow(query, args)
 }
