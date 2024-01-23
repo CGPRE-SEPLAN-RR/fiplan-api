@@ -38,7 +38,7 @@ cd fiplan-api
 3. Baixe as dependências do projeto
 
 ```bash
-go get .
+go get ./...
 ```
 
 4. Copie o arquivo com as variáveis de ambiente
