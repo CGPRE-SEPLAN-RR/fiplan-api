@@ -9,6 +9,8 @@ import (
 	"github.com/swaggo/echo-swagger"
 
 	_ "github.com/CGPRE-SEPLAN-RR/fiplan-api/docs"
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal"
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/model"
 )
 
 // @title API do FIPLAN
@@ -27,19 +29,49 @@ func (s *Server) RegisterRoutes() http.Handler {
 		},
 	}))
 
-	e.GET("/", s.HelloWorldHandler)
 	e.GET("/health", s.HealthHandler)
+	e.GET("/conta", s.ContaContabilHandler)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	return e
 }
 
-func (s *Server) HelloWorldHandler(c echo.Context) error {
-	resp := map[string]string{
-		"message": "Hello World",
+func (s *Server) ContaContabilHandler(c echo.Context) error {
+	var contas []model.ContaContabil
+
+	rows, err := s.db.Query("SELECT CODG_CONTA_CONTABIL, NOME_CONTA_CONTABIL FROM ACWTB0032 LIMIT 50")
+
+	if err != nil {
+		return c.JSON(
+			http.StatusInternalServerError,
+			internal.BasicResponse("Erro ao consultar as contas contábeis"),
+		)
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	defer rows.Close()
+
+	for rows.Next() {
+		var conta model.ContaContabil
+
+		if err := rows.Scan(&conta.Codigo, &conta.Nome); err != nil {
+			return c.JSON(
+				http.StatusInternalServerError,
+				internal.BasicResponse("Erro ao consultar uma das contas contábeis"),
+			)
+
+		}
+
+		contas = append(contas, conta)
+	}
+
+	if err := rows.Err(); err != nil {
+		return c.JSON(
+			http.StatusInternalServerError,
+			internal.BasicResponse("Não sei que erro é esse"),
+		)
+	}
+
+	return c.JSON(http.StatusOK, contas)
 }
 
 func (s *Server) HealthHandler(c echo.Context) error {
