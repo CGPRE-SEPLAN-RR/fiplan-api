@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/server"
 	"fmt"
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/server"
 )
 
 func main() {

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/database"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 type Server struct {
