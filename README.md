@@ -61,13 +61,19 @@ DB_PORT=1521 # Porta do banco de dados (A porta padrão para bancos de dado Orac
 DB_HOST= # Endereço IP do banco de dados
 ```
 
-6. Execute o código
+6. Gere a documentação
+
+```bash
+make docs
+```
+
+7. Execute o código
 
 ```bash
 make run
 ```
 
-7. Acesse a documentação no [servidor local](http://localhost:8080/swagger/index.html)
+8. Acesse a documentação no [servidor local](http://localhost:8080/swagger/index.html)
 
 ## Comandos `make`
 
