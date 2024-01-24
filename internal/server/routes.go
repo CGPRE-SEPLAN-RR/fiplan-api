@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 
 	_ "github.com/CGPRE-SEPLAN-RR/fiplan-api/docs"
 	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal"
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/database"
 	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/model"
 )
 
@@ -29,7 +31,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 		},
 	}))
 
-	e.GET("/health", s.HealthHandler)
 	e.GET("/conta", s.ContaContabilHandler)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -39,9 +40,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 func (s *Server) ContaContabilHandler(c echo.Context) error {
 	var contas []model.ContaContabil
 
-	rows, err := s.db.Query("SELECT CODG_CONTA_CONTABIL, NOME_CONTA_CONTABIL FROM ACWTB0032 LIMIT 50")
+	sqlQuery := "SELECT CODG_CONTA_CONTABIL, NOME_CONTA_CONTABIL FROM ACWTB0032 FETCH FIRST 50 ROWS ONLY"
+
+	rows, err := s.db.Query(sqlQuery)
 
 	if err != nil {
+		log.Println(err)
 		return c.JSON(
 			http.StatusInternalServerError,
 			internal.BasicResponse("Erro ao consultar as contas contábeis"),
@@ -72,8 +76,4 @@ func (s *Server) ContaContabilHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, contas)
-}
-
-func (s *Server) HealthHandler(c echo.Context) error {
-	return c.JSON(http.StatusOK, s.db.Health())
 }

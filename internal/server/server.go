@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,7 +14,7 @@ import (
 
 type Server struct {
 	port int
-	db   database.Service
+	db   *sql.DB
 }
 
 func NewServer() *http.Server {
