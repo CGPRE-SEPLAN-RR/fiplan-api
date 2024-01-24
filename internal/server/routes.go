@@ -12,6 +12,8 @@ import (
 	_ "github.com/CGPRE-SEPLAN-RR/fiplan-api/docs"
 )
 
+type Erro echo.HTTPError
+
 var Validate = validator.New()
 
 // @title API do FIPLAN
