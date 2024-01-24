@@ -1,19 +1,18 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/swaggo/echo-swagger"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	_ "github.com/CGPRE-SEPLAN-RR/fiplan-api/docs"
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal"
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/database"
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/model"
 )
+
+var Validate = validator.New()
 
 // @title API do FIPLAN
 // @version 0.0.0-alpha
@@ -23,6 +22,7 @@ import (
 // @contact.email cgpre@planejamento.rr.gov.br
 func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
@@ -35,45 +35,4 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	return e
-}
-
-func (s *Server) ContaContabilHandler(c echo.Context) error {
-	var contas []model.ContaContabil
-
-	sqlQuery := "SELECT CODG_CONTA_CONTABIL, NOME_CONTA_CONTABIL FROM ACWTB0032 FETCH FIRST 50 ROWS ONLY"
-
-	rows, err := s.db.Query(sqlQuery)
-
-	if err != nil {
-		log.Println(err)
-		return c.JSON(
-			http.StatusInternalServerError,
-			internal.BasicResponse("Erro ao consultar as contas contábeis"),
-		)
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var conta model.ContaContabil
-
-		if err := rows.Scan(&conta.Codigo, &conta.Nome); err != nil {
-			return c.JSON(
-				http.StatusInternalServerError,
-				internal.BasicResponse("Erro ao consultar uma das contas contábeis"),
-			)
-
-		}
-
-		contas = append(contas, conta)
-	}
-
-	if err := rows.Err(); err != nil {
-		return c.JSON(
-			http.StatusInternalServerError,
-			internal.BasicResponse("Não sei que erro é esse"),
-		)
-	}
-
-	return c.JSON(http.StatusOK, contas)
 }
