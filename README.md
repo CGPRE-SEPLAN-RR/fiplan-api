@@ -119,3 +119,6 @@ make test
 make clean
 ```
 
+## Contribuição com o Projeto
+
+Por favor, leia o [documento de apoio aos desenvolvedores](./CONTRIBUTING.md).
