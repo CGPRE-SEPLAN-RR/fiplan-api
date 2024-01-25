@@ -12,8 +12,6 @@ import (
 	_ "github.com/CGPRE-SEPLAN-RR/fiplan-api/docs"
 )
 
-type Erro echo.HTTPError
-
 var Validate = validator.New()
 
 // @title API do FIPLAN
@@ -35,6 +33,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/conta", s.ContaContabilHandler)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET("/relatorio/fip_215", s.FIP215Handler)
 
 	return e
 }
