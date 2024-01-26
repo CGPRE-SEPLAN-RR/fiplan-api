@@ -8,11 +8,26 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/model"
 	"github.com/labstack/echo/v4"
 )
 
-// @FIP215Handler godoc
+type dadoRelatorioFIP215 struct {
+	CodigoUnidadeOrcamentaria string  `json:"codigo_unidade_orcamentaria"`
+	NomeUnidadeOrcamentaria   string  `json:"nome_unidade_orcamentaria"`
+	IDContaContabil           string  `json:"id_conta_contabil"`
+	IDContaContabilExplosao   string  `json:"id_conta_contabil_explosao"`
+	CodigoContaContabil       string  `json:"codigo_conta_contabil"`
+	NomeContaContabil         string  `json:"nome_conta_contabil"`
+	SaldoAnterior             float64 `json:"saldo_anterior"`
+	ValorCredito              float64 `json:"valor_credito"`
+	ValorDebito               float64 `json:"valor_debito"`
+}
+
+type relatorioFIP215 struct {
+	Dados []dadoRelatorioFIP215
+} // @name RelatorioFIP215
+
+// @RelatorioFIP215Handler godoc
 // @Summary     FIP215 - Balancete Mensal de Verificação
 // @Description Teste
 // @Tags        Relatório
@@ -26,12 +41,12 @@ import (
 // @Param       indicativo_conta_contabil_rp     query    bool   false "Indicativo de Conta Contábil de RP" Enums(true, false)
 // @Param       indicativo_superavit_fincanceiro query    bool   false "Indicativo de Superávit Financeiro" Enums(true, false)
 // @Param       indicativo_composicao_msc        query    bool   false "Indicativo de Composição da MSC"    Enums(true, false)
-// @Success     200                              {array}  model.RelatorioFIP215
+// @Success     200                              {array}  relatorioFIP215
 // @Failure     400                              {object} Erro
 // @Failure     404                              {object} Erro
 // @Failure     500                              {object} Erro
 // @Router      /relatorio/fip_215 [get]
-func (s *Server) FIP215Handler(c echo.Context) error {
+func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	/*** Parâmetros ***/
 	var anoExercicio uint16
 	var unidadeGestora uint16
@@ -247,7 +262,7 @@ func (s *Server) FIP215Handler(c echo.Context) error {
 	/*** Validação dos Parâmetros ***/
 
 	/*** Consulta no Banco de Dados ***/
-	var relatorio model.RelatorioFIP215
+	var relatorio relatorioFIP215
 
 	queryTemplate := `SELECT
 										RESULTADO_SALDO_INICIAL.CD_UNIDADE_ORCAMENTARIA,
@@ -392,7 +407,7 @@ func (s *Server) FIP215Handler(c echo.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var dado model.DadoRelatorioFIP215
+		var dado dadoRelatorioFIP215
 
 		if err := rows.Scan(
 			&dado.CodigoUnidadeOrcamentaria,

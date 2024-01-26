@@ -6,9 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/model"
 	"github.com/labstack/echo/v4"
 )
+
+type contaContabil struct {
+	Codigo string `json:"codigo"`
+	Nome   string `json:"nome"`
+} // @name ContaContabil
 
 // @ContaContabilHandler godoc
 // @Summary     Lista as contas
@@ -44,7 +48,7 @@ func (s *Server) ContaContabilHandler(c echo.Context) error {
 	/*** Validação dos Parâmetros ***/
 
 	/*** Consulta no Banco de Dados ***/
-	var contas []model.ContaContabil
+	var contas []contaContabil
 
 	sqlQuery := `SELECT CODG_CONTA_CONTABIL,NOME_CONTA_CONTABIL
 							 FROM ACWTB0032
@@ -65,7 +69,7 @@ func (s *Server) ContaContabilHandler(c echo.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var conta model.ContaContabil
+		var conta contaContabil
 
 		if err := rows.Scan(&conta.Codigo, &conta.Nome); err != nil {
 			log.Printf("ContaContabilHandler: %v", err)

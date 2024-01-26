@@ -33,7 +33,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/conta", s.ContaContabilHandler)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
-	e.GET("/relatorio/fip_215", s.FIP215Handler)
+	e.GET("/relatorio/fip_215", s.RelatorioFIP215Handler)
 
 	return e
 }
