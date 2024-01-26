@@ -35,12 +35,16 @@ type relatorioFIP215 struct {
 // @Produce     json
 // @Param       ano_exercicio                    query    uint16 true  "Ano de Exercício"
 // @Param       unidade_gestora                  query    uint16 false "Unidade Gestora"
+// @Param       unidade_orcamentaria             query    uint16 false "Unidade Orçamentária"
 // @Param       mes_referencia                   query    uint8  true  "Mês de Referência"                  Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 // @Param       mes_contabil                     query    uint8  true  "Mês Contábil"                       Enums(1, 2, 3, 4)
+// @Param       tipo_poder                       query    uint8  false "Tipo de Poder"                      Enums(1, 2, 3, 4, 5)
+// @Param       tipo_administracao               query    uint8  false "Tipo de Administração"              Enums(1, 2, 3)
 // @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento"               Enums(1, 2)
-// @Param       indicativo_conta_contabil_rp     query    bool   false "Indicativo de Conta Contábil de RP" Enums(true, false)
-// @Param       indicativo_superavit_fincanceiro query    bool   false "Indicativo de Superávit Financeiro" Enums(true, false)
-// @Param       indicativo_composicao_msc        query    bool   false "Indicativo de Composição da MSC"    Enums(true, false)
+// @Param       consolidado_rpps                 query    uint8  false "Consolidado RPPS"                   Enums(1, 2)
+// @Param       indicativo_conta_contabil_rp     query    bool   false "Indicativo de Conta Contábil de RP" Enums(1, 2)
+// @Param       indicativo_superavit_fincanceiro query    bool   false "Indicativo de Superávit Financeiro" Enums(1, 2)
+// @Param       indicativo_composicao_msc        query    bool   false "Indicativo de Composição da MSC"    Enums(1, 2)
 // @Success     200                              {array}  relatorioFIP215
 // @Failure     400                              {object} Erro
 // @Failure     404                              {object} Erro

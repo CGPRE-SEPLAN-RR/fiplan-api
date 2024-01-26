@@ -21,7 +21,7 @@ type contaContabil struct {
 // @Accept      json
 // @Produce     json
 // @Param       ano_exercicio query    int8 true "Ano de Exercício"
-// @Success     200           {array}  model.ContaContabil
+// @Success     200           {array}  contaContabil
 // @Failure     400           {object} Erro
 // @Failure     404           {object} Erro
 // @Failure     500           {object} Erro
