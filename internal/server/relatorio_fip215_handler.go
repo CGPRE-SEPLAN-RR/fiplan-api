@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,15 +13,15 @@ import (
 )
 
 type dadoRelatorioFIP215 struct {
-	CodigoUnidadeOrcamentaria string  `json:"codigo_unidade_orcamentaria"`
-	NomeUnidadeOrcamentaria   string  `json:"nome_unidade_orcamentaria"`
-	IDContaContabil           string  `json:"id_conta_contabil"`
-	IDContaContabilExplosao   string  `json:"id_conta_contabil_explosao"`
-	CodigoContaContabil       string  `json:"codigo_conta_contabil"`
-	NomeContaContabil         string  `json:"nome_conta_contabil"`
-	SaldoAnterior             float64 `json:"saldo_anterior"`
-	ValorCredito              float64 `json:"valor_credito"`
-	ValorDebito               float64 `json:"valor_debito"`
+	CodigoUnidadeOrcamentaria sql.NullString  `json:"codigo_unidade_orcamentaria"`
+	NomeUnidadeOrcamentaria   sql.NullString  `json:"nome_unidade_orcamentaria"`
+	IDContaContabil           sql.NullString  `json:"id_conta_contabil"`
+	IDContaContabilExplosao   sql.NullString  `json:"id_conta_contabil_explosao"`
+	CodigoContaContabil       sql.NullString  `json:"codigo_conta_contabil"`
+	NomeContaContabil         sql.NullString  `json:"nome_conta_contabil"`
+	SaldoAnterior             sql.NullFloat64 `json:"saldo_anterior"`
+	ValorCredito              sql.NullFloat64 `json:"valor_credito"`
+	ValorDebito               sql.NullFloat64 `json:"valor_debito"`
 }
 
 type relatorioFIP215 struct {
@@ -42,9 +43,9 @@ type relatorioFIP215 struct {
 // @Param       tipo_administracao               query    uint8  false "Tipo de Administração"              Enums(1, 2, 3)
 // @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento"               Enums(1, 2)
 // @Param       consolidado_rpps                 query    uint8  false "Consolidado RPPS"                   Enums(1, 2)
-// @Param       indicativo_conta_contabil_rp     query    bool   false "Indicativo de Conta Contábil de RP" Enums(1, 2)
-// @Param       indicativo_superavit_fincanceiro query    bool   false "Indicativo de Superávit Financeiro" Enums(1, 2)
-// @Param       indicativo_composicao_msc        query    bool   false "Indicativo de Composição da MSC"    Enums(1, 2)
+// @Param       indicativo_conta_contabil_rp     query    uint8  false "Indicativo de Conta Contábil de RP" Enums(1, 2)
+// @Param       indicativo_superavit_fincanceiro query    uint8  false "Indicativo de Superávit Financeiro" Enums(1, 2)
+// @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC"    Enums(1, 2)
 // @Success     200                              {array}  relatorioFIP215
 // @Failure     400                              {object} Erro
 // @Failure     404                              {object} Erro
@@ -52,212 +53,125 @@ type relatorioFIP215 struct {
 // @Router      /relatorio/fip_215 [get]
 func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	/*** Parâmetros ***/
-	var anoExercicio uint16
-	var unidadeGestora uint16
-	var unidadeOrcamentaria uint16
-	var mesReferencia uint8
-	var mesContabil uint8
-	var tipoPoder uint8
-	var tipoAdministracao uint8
-	var tipoEncerramento uint8
-	var consolidadoRPPS uint8
-	var indicativoComposicaoMSC uint8
-	var indicativoContaContabilRP uint8
-	var indicativoSuperavitFinanceiro uint8
+	parametros := struct {
+		AnoExercicio                  uint16
+		UnidadeGestora                uint16
+		UnidadeOrcamentaria           uint16
+		MesReferencia                 uint8
+		MesContabil                   uint8
+		TipoPoder                     uint8
+		TipoAdministracao             uint8
+		TipoEncerramento              uint8
+		ConsolidadoRPPS               uint8
+		IndicativoComposicaoMSC       uint8
+		IndicativoContaContabilRP     uint8
+		IndicativoSuperavitFinanceiro uint8
 
-	var parametros struct {
-		anoExercicio                  string
-		unidadeGestora                string
-		unidadeOrcamentaria           string
-		mesReferencia                 string
-		mesContabil                   string
-		tipoPoder                     string
-		tipoAdministracao             string
-		tipoEncerramento              string
-		consolidadoRPPS               string
-		indicativoComposicaoMSC       string
-		indicativoContaContabilRP     string
-		indicativoSuperavitFinanceiro string
-	}
+		Meses []string
+		MesReferenciaNome string
+		MesAnteriorReferenciaNome string
+	}{}
 	/*** Parâmetros ***/
-
-	/*** Dados Estáticos ***/
-	mesContabilParaFlag := map[uint8]string{
-		1: "1428",
-		2: "1429",
-		3: "1430",
-		4: "10120",
-	}
-
-	indicativoSuperavitFinanceiroParaFlag := map[uint8]string{
-		1: "856",
-		2: "857",
-	}
-
-	indicativoComposicaoMSCParaFlag := map[uint8]string{
-		1: "856",
-		2: "857",
-	}
-
-	mesParaTexto := map[uint8]string{
-		1:  "JANEIRO",
-		2:  "FEVEREIRO",
-		3:  "MARCO",
-		4:  "ABRIL",
-		5:  "MAIO",
-		6:  "JUNHO",
-		7:  "JULHO",
-		8:  "AGOSTO",
-		9:  "SETEMBRO",
-		10: "OUTUBRO",
-		11: "NOVEMBRO",
-		12: "DEZEMBRO",
-	}
-	/*** Dados Estáticos ***/
 
 	/*** Validação dos Parâmetros ***/
 	valueBinder := echo.QueryParamsBinder(c)
 
 	var errors []string
-	
-	if err := valueBinder.MustUint16("ano_exercicio", &anoExercicio).BindError(); err != nil {
+
+	if err := valueBinder.MustUint16("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
 	}
 
-	if err := Validate.Var(anoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
-		errors =append(errors, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
-	} else {
-		parametros.anoExercicio = fmt.Sprint(anoExercicio)
+	if err := Validate.Var(parametros.AnoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
+		errors = append(errors, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
 	}
 
-	if err := valueBinder.Uint16("unidade_gestora", &unidadeGestora).BindError(); err != nil {
+	if err := valueBinder.Uint16("unidade_gestora", &parametros.UnidadeGestora).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça a unidade gestora no parâmetro 'unidade_gestora'.")
-	} else {
-		parametros.unidadeGestora = fmt.Sprint(unidadeGestora)
 	}
 
-	if err := valueBinder.Uint16("unidade_orcamentaria", &unidadeOrcamentaria).BindError(); err != nil {
+	if err := valueBinder.Uint16("unidade_orcamentaria", &parametros.UnidadeOrcamentaria).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça a unidade orçamentária no parâmetro 'unidade_orcamentaria'.")
-	} else {
-		parametros.unidadeOrcamentaria = fmt.Sprint(unidadeOrcamentaria)
 	}
 
-	if err := valueBinder.MustUint8("mes_referencia", &mesReferencia).BindError(); err != nil {
+	if err := valueBinder.MustUint8("mes_referencia", &parametros.MesReferencia).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça o mês de referência no parâmetro 'mes_referencia'.")
 	}
 
-	if err := Validate.Var(mesReferencia, "gte=1,lte=12"); err != nil {
+	if err := Validate.Var(parametros.MesReferencia, "gte=1,lte=12"); err != nil {
 		errors = append(errors, "Por favor, forneça um mês de referência válido entre 1 e 12 para o parâmetro 'mes_referencia'.")
 	} else {
-		parametros.mesReferencia = mesParaTexto[mesReferencia]
+		var i uint8
+		for i = 1; i < parametros.MesReferencia; i++ {
+			parametros.Meses = append(parametros.Meses, MesParaNome[i])
+		}
+
+		parametros.MesReferenciaNome = MesParaNome[parametros.MesReferencia]
+		parametros.MesAnteriorReferenciaNome = MesParaNome[parametros.MesReferencia - 1]
 	}
 
-	if err := valueBinder.MustUint8("mes_contabil", &mesContabil).BindError(); err != nil {
+	if err := valueBinder.MustUint8("mes_contabil", &parametros.MesContabil).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça o mês contábil no parâmetro 'mes_contabil'.")
 	}
 
-	if err := Validate.Var(mesContabil, "gte=1,lte=4"); err != nil {
+	if err := Validate.Var(parametros.MesContabil, "gte=1,lte=4"); err != nil {
 		errors = append(errors, "Por favor, forneça um mês contábil válido entre 1 e 4 para o parâmetro 'mes_contabil'.")
-	} else {
-		parametros.mesContabil = mesContabilParaFlag[mesContabil]
 	}
 
-	if err := valueBinder.Uint8("tipo_poder", &tipoPoder).BindError(); err != nil {
+	if err := valueBinder.Uint8("tipo_poder", &parametros.TipoPoder).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça o tipo de poder no parâmetro 'tipo_poder'.")
 	}
 
-	if err := Validate.Var(tipoPoder, "gte=0,lte=5"); err != nil {
+	if err := Validate.Var(parametros.TipoPoder, "gte=0,lte=5"); err != nil {
 		errors = append(errors, "Por favor, forneça um tipo de poder válido entre 1 e 5 para o parâmetro 'tipo_poder'.")
-	} else {
-		if tipoPoder != 0 {
-			parametros.tipoPoder = string(tipoPoder)
-		} else {
-			parametros.tipoPoder = ""
-		}
 	}
 
-	if err := valueBinder.Uint8("tipo_administracao", &tipoAdministracao).BindError(); err != nil {
+	if err := valueBinder.Uint8("tipo_administracao", &parametros.TipoAdministracao).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça o tipo de administração no parâmetro 'tipo_administracao'.")
 	}
 
-	if err := Validate.Var(tipoAdministracao, "gte=0,lte=3"); err != nil {
+	if err := Validate.Var(parametros.TipoAdministracao, "gte=0,lte=3"); err != nil {
 		errors = append(errors, "Por favor, forneça um tipo de administração válido entre 1 e 3 para o parâmetro 'tipo_administracao'.")
-	} else {
-		if tipoAdministracao != 0 {
-			parametros.tipoAdministracao = string(tipoAdministracao)
-		} else {
-			parametros.tipoAdministracao = ""
-		}
 	}
 
-	if err := valueBinder.Uint8("tipo_encerramento", &tipoEncerramento).BindError(); err != nil {
-		errors = append(errors,"Por favor, forneça o tipo de encerramento no parâmetro 'tipo_encerramento'.")
+	if err := valueBinder.Uint8("tipo_encerramento", &parametros.TipoEncerramento).BindError(); err != nil {
+		errors = append(errors, "Por favor, forneça o tipo de encerramento no parâmetro 'tipo_encerramento'.")
 	}
 
-	if err := Validate.Var(tipoEncerramento, "gte=0,lte=2"); err != nil {
+	if err := Validate.Var(parametros.TipoEncerramento, "gte=0,lte=2"); err != nil {
 		errors = append(errors, "Por favor, forneça um tipo de encerramento válido entre 1 e 2 para o parâmetro 'tipo_encerramento'.")
-	} else {
-		if tipoEncerramento != 0 {
-			parametros.tipoEncerramento = string(tipoEncerramento)
-		} else {
-			parametros.tipoEncerramento = ""
-		}
 	}
 
-	if err := valueBinder.Uint8("consolidado_rpps", &consolidadoRPPS).BindError(); err != nil {
-		errors = append(errors,"Por favor, forneça o consolidado do RPPS no parâmetro 'consolidado_rpps'.")
+	if err := valueBinder.Uint8("consolidado_rpps", &parametros.ConsolidadoRPPS).BindError(); err != nil {
+		errors = append(errors, "Por favor, forneça o consolidado do RPPS no parâmetro 'consolidado_rpps'.")
 	}
 
-	if err := Validate.Var(consolidadoRPPS, "gte=0,lte=2"); err != nil {
+	if err := Validate.Var(parametros.ConsolidadoRPPS, "gte=0,lte=2"); err != nil {
 		errors = append(errors, "Por favor, forneça um consolidado do RPPS válido entre 1 e 2 para o parâmetro 'consolidado_rpps'.")
-	} else {
-		if consolidadoRPPS != 0 {
-			parametros.consolidadoRPPS = string(consolidadoRPPS)
-		} else {
-			parametros.consolidadoRPPS = ""
-		}
 	}
 
-	if err := valueBinder.Uint8("indicativo_conta_contabil_rp", &indicativoContaContabilRP).BindError(); err != nil {
-		errors = append(errors,"Por favor, forneça o indicativo de conta contábil de RP no parâmetro 'indicativo_conta_contabil_rp'.")
+	if err := valueBinder.Uint8("indicativo_conta_contabil_rp", &parametros.IndicativoContaContabilRP).BindError(); err != nil {
+		errors = append(errors, "Por favor, forneça o indicativo de conta contábil de RP no parâmetro 'indicativo_conta_contabil_rp'.")
 	}
 
-	if err := Validate.Var(indicativoContaContabilRP, "gte=0,lte=2"); err != nil {
+	if err := Validate.Var(parametros.IndicativoContaContabilRP, "gte=0,lte=2"); err != nil {
 		errors = append(errors, "Por favor, forneça um indicativo de conta contábil de RP válido entre 1 e 2 para o parâmetro 'indicativo_conta_contabil_rp'.")
-	} else {
-		if indicativoContaContabilRP != 0 {
-			parametros.indicativoContaContabilRP = string(indicativoContaContabilRP)
-		} else {
-			parametros.indicativoContaContabilRP = ""
-		}
 	}
 
-	if err := valueBinder.Uint8("indicativo_superavit_fincanceiro", &indicativoSuperavitFinanceiro).BindError(); err != nil {
-		errors = append(errors,"Por favor, forneça o indicativo de superávit financeiro no parâmetro 'indicativo_superavit_fincanceiro'.")
+	if err := valueBinder.Uint8("indicativo_superavit_fincanceiro", &parametros.IndicativoSuperavitFinanceiro).BindError(); err != nil {
+		errors = append(errors, "Por favor, forneça o indicativo de superávit financeiro no parâmetro 'indicativo_superavit_fincanceiro'.")
 	}
 
-	if err := Validate.Var(indicativoSuperavitFinanceiro, "gte=0,lte=2"); err != nil {
+	if err := Validate.Var(parametros.IndicativoSuperavitFinanceiro, "gte=0,lte=2"); err != nil {
 		errors = append(errors, "Por favor, forneça um indicativo de superávit financeiro válido entre 1 e 2 para o parâmetro 'indicativo_superavit_fincanceiro'.")
-	} else {
-		if indicativoSuperavitFinanceiro != 0 {
-			parametros.indicativoSuperavitFinanceiro = indicativoSuperavitFinanceiroParaFlag[indicativoSuperavitFinanceiro]
-		} else {
-			parametros.indicativoSuperavitFinanceiro = ""
-		}
 	}
 
-	if err := valueBinder.Uint8("indicativo_composicao_msc", &indicativoComposicaoMSC).BindError(); err != nil {
-		errors = append(errors,"Por favor, forneça o indicativo de composição da MSC no parâmetro 'indicativoComposicaoMSC'.")
+	if err := valueBinder.Uint8("indicativo_composicao_msc", &parametros.IndicativoComposicaoMSC).BindError(); err != nil {
+		errors = append(errors, "Por favor, forneça o indicativo de composição da MSC no parâmetro 'indicativoComposicaoMSC'.")
 	}
 
-	if err := Validate.Var(indicativoComposicaoMSC, "gte=0,lte=2"); err != nil {
+	if err := Validate.Var(parametros.IndicativoComposicaoMSC, "gte=0,lte=2"); err != nil {
 		errors = append(errors, "Por favor, forneça um indicativo de composição da MSC válido entre 1 e 2 para o parâmetro 'indicativo_composicao_msc'.")
-	} else {
-		if indicativoComposicaoMSC != 0 {
-			parametros.indicativoComposicaoMSC = indicativoComposicaoMSCParaFlag[indicativoComposicaoMSC]
-		} else {
-			parametros.indicativoComposicaoMSC = ""
-		}
 	}
 
 	if len(errors) > 0 {
@@ -301,13 +215,29 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 										 	  UO.ID_UNIDADE_ORCAMENTARIA,
 										 	  UO.CD_UNIDADE_ORCAMENTARIA,
 										 	  UO.DS_UNIDADE_ORCAMENTARIA,
+												
+												{{if .TipoPoder}}
+												ORG.FLG_TP_PODER,
+												{{end}}
+
 										 	  CC.IDEN_CONTA_CONTABIL,
 										 	  CC.CONTA_EXPLOSAO,
 										 	  CC.CODG_CONTA_CONTABIL,
 										 	  CC.NOME_CONTA_CONTABIL,
-										 	  SUM(NVL(SM.VALR_CRE_DEZEMBRO, 0)) AS VALOR_CREDITO,
-										 	  SUM(NVL(SM.VALR_DEB_DEZEMBRO, 0)) AS VALOR_DEBITO,
-										 	  SUM(NVL(SM.VALR_NOVEMBRO, 0)) AS SALDO_ANTERIOR
+
+												{{range .Meses}}
+										 	  SUM(NVL(SM.VALR_CRE_{{.}}, 0)) +
+												{{end}}
+												
+										 	  SUM(NVL(SM.VALR_CRE_{{.MesReferenciaNome}}, 0)) AS VALOR_CREDITO,
+
+												{{range .Meses}}
+										 	  SUM(NVL(SM.VALR_DEB_{{.}}, 0)) +
+												{{end}}
+
+										 	  SUM(NVL(SM.VALR_DEB_{{.MesReferenciaNome}}, 0)) AS VALOR_DEBITO,
+
+										 	  SUM(NVL(SM.VALR_{{.MesAnteriorReferenciaNome}}, 0)) AS SALDO_ANTERIOR
 										 	  
 										 	  FROM
 										 	  UNIDADE_ORCAMENTARIA UO 
@@ -323,14 +253,61 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 										 	  ITEM_DOMINIO DOMINIO_RP ON (CC.FLAG_CONTA_CONTABIL_RP = DOMINIO_RP.ID_ITEM_DOMINIO)
 										 	  LEFT JOIN
 										 	  ITEM_DOMINIO DOMINIO_ENCERRA ON (CC.FLAG_TIPO_ENCERRAMENTO = DOMINIO_ENCERRA.ID_ITEM_DOMINIO)
-										 	  
-										 	  WHERE SM.FLAG_MES_CONTABIL != 10120
+
+												{{if eq .MesContabil 1}}
+										 	  AND SM.FLAG_MES_CONTABIL = 1428
+												{{else if eq .MesContabil 2}}
+										 	  AND SM.FLAG_MES_CONTABIL = 1429
+												{{else if eq .MesContabil 3}}
+										 	  AND SM.FLAG_MES_CONTABIL = 1430
+												{{else if eq .MesContabil 4}}
+										 	  AND SM.FLAG_MES_CONTABIL != 10120
+												{{end}}
+
+												{{if eq .TipoPoder 1}}
+										 	  AND ORG.FLG_TP_PODER = {{.TipoPoder}}
+										 	  AND UO.CD_UNIDADE_ORCAMENTARIA <> 08101
+										 	  AND UO.CD_UNIDADE_ORCAMENTARIA <> 08601
+												{{else if or (eq .TipoPoder 2) (eq .TipoPoder 3)}}
+										 	  AND ORG.FLG_TP_PODER = {{.TipoPoder}}
+												{{else if eq .TipoPoder 4}}
+										 	  AND (UO.CD_UNIDADE_ORCAMENTARIA <> 08101 OR UO.CD_UNIDADE_ORCAMENTARIA <> 08601)
+												{{end}}
+
+												{{if .IndicativoContaContabilRP}}
+												AND DOMINIO_RP.CD_ITEM_DOMINIO = {{.IndicativoContaContabilRP}}
+												{{end}}
+
+												{{if .TipoEncerramento}}
+												AND DOMINIO_ENCERRA.CD_ITEM_DOMINIO = {{.TipoEncerramento}}
+												{{end}}
+
+												{{if eq .IndicativoSuperavitFinanceiro 1}}
+												AND CC.FLAG_SUPERAVIT_FINANCEIRO = 856
+												{{else if eq .IndicativoSuperavitFinanceiro 2}}
+												AND CC.FLAG_SUPERAVIT_FINANCEIRO = 857
+												{{end}}
+
+												{{if eq .IndicativoComposicaoMSC 1}}
+												AND CC.FLAG_SUPERAVIT_FINANCEIRO = 856
+												{{else if eq .IndicativoComposicaoMSC 2}}
+												AND CC.FLAG_SUPERAVIT_FINANCEIRO = 857
+												{{end}}
+
+												{{if eq .ConsolidadoRPPS 1}}
+												AND UO.CD_UNIDADE_ORCAMENTARIA IN (15301, 15601, 15602, 15603)
+												{{end}}
 										 	  
 										 	  GROUP BY
 										 	  UO.CD_EXERCICIO,
 										 	  UO.CD_UNIDADE_ORCAMENTARIA,
 										 	  UO.DS_UNIDADE_ORCAMENTARIA,
 										 	  UO.ID_UNIDADE_ORCAMENTARIA,
+
+												{{if .TipoPoder}}
+												ORG.FLG_TP_PODER,
+												{{end}}
+
 										 	  CC.IDEN_CONTA_CONTABIL,
 										 	  CC.CONTA_EXPLOSAO,
 										 	  CC.CODG_CONTA_CONTABIL,
@@ -343,22 +320,6 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 										  AND SI.ID_UNIDADE_GESTORA = UG.ID_UNIDADE_GESTORA
 										  AND SI.IDEN_CONTA_CONTABIL = RESULTADO_SALDO_MENSAL.IDEN_CONTA_CONTABIL
 
-											{{if .mesContabil}}
-											AND SM.FLAG_MES_CONTABIL = {{.mesContabil}}
-											{{end}}
-
-											{{if .indicativoContaContabilRP}}
-											AND DOMINIO_RP.CD_ITEM_DOMINIO = {{.indicativoContaContabilRP}}
-											{{end}}
-
-											{{if .indicativoSuperavitFinanceiro}}
-											AND CC.FLAG_SUPERAVIT_FINANCEIRO = {{.indicativoSuperavitFinanceiro}}
-											{{end}}
-
-											{{if .indicativoComposicaoMSC}}
-											AND CC.FLAG_COMPOSICAO_MSC = {{.indicativoComposicaoMSC}}
-											{{end}}
-										  
 										  GROUP BY
 										  RESULTADO_SALDO_MENSAL.CD_EXERCICIO,
 										  RESULTADO_SALDO_MENSAL.ID_UNIDADE_ORCAMENTARIA,
