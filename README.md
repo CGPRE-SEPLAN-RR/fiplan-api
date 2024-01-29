@@ -11,7 +11,7 @@ API para consulta dos dados do FIPLAN.
 
 - Facilitar a vida do desenvolvedor, com atitudes como:
     - Cada relatório deve ter tudo que é relativo a ele em um único arquivo (parâmetros, validadores, *queries* SQL, etc.)
-- Ser extremamente intuitivo na sua utilização, de forma a gerar o menor número de dúvidas possível para os usuários
+- Ser extremamente intuitivo na sua utilização, de forma a gerar o menor número de dúvidas possível para os usuários e desenvolvedores
 - Atender às [especificações da OpenAPI](https://swagger.io/specification/), visando fornecer uma documentação simples, porém extensiva, via [Swagger](https://swagger.io/)
 
 ### Tecnologia
