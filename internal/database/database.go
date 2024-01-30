@@ -19,7 +19,7 @@ var (
 )
 
 func New() *sql.DB {
-	connStr := fmt.Sprintf("oracle://%s:%s@%s:%s/%s", username, password, host, port, database)
+	connStr := fmt.Sprintf(`user="%s" password="%s" connectString="%s:%s/%s" timezone="America/Boa_Vista"`, username, password, host, port, database)
 
 	db, err := sql.Open("godror", connStr)
 
