@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,23 +8,24 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/godror/godror"
 	"github.com/labstack/echo/v4"
 )
 
-type dadoRelatorioFIP215 struct {
-	CodigoUnidadeOrcamentaria sql.NullString  `json:"codigo_unidade_orcamentaria"`
-	NomeUnidadeOrcamentaria   sql.NullString  `json:"nome_unidade_orcamentaria"`
-	IDContaContabil           sql.NullString  `json:"id_conta_contabil"`
-	IDContaContabilExplosao   sql.NullString  `json:"id_conta_contabil_explosao"`
-	CodigoContaContabil       sql.NullString  `json:"codigo_conta_contabil"`
-	NomeContaContabil         sql.NullString  `json:"nome_conta_contabil"`
-	SaldoAnterior             sql.NullFloat64 `json:"saldo_anterior"`
-	ValorCredito              sql.NullFloat64 `json:"valor_credito"`
-	ValorDebito               sql.NullFloat64 `json:"valor_debito"`
+type dado struct {
+	CodigoUnidadeOrcamentaria string  `json:"codigo_unidade_orcamentaria"`
+	NomeUnidadeOrcamentaria   string  `json:"nome_unidade_orcamentaria"`
+	IDContaContabil           string  `json:"id_conta_contabil"`
+	IDContaContabilExplosao   string  `json:"id_conta_contabil_explosao"`
+	CodigoContaContabil       string  `json:"codigo_conta_contabil"`
+	NomeContaContabil         string  `json:"nome_conta_contabil"`
+	SaldoAnterior             float64 `json:"saldo_anterior"`
+	ValorCredito              float64 `json:"valor_credito"`
+	ValorDebito               float64 `json:"valor_debito"`
 }
 
 type relatorioFIP215 struct {
-	Dados []dadoRelatorioFIP215
+	Dados []dado
 } // @name RelatorioFIP215
 
 // @RelatorioFIP215Handler godoc
@@ -35,18 +35,18 @@ type relatorioFIP215 struct {
 // @Accept      json
 // @Produce     json
 // @Param       ano_exercicio                    query    uint16 true  "Ano de Exercício"
-// @Param       unidade_gestora                  query    uint16 false "Unidade Gestora"
-// @Param       unidade_orcamentaria             query    uint16 false "Unidade Orçamentária"
-// @Param       mes_referencia                   query    uint8  true  "Mês de Referência"                  Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-// @Param       mes_contabil                     query    uint8  true  "Mês Contábil"                       Enums(1, 2, 3, 4)
-// @Param       tipo_poder                       query    uint8  false "Tipo de Poder"                      Enums(1, 2, 3, 4, 5)
-// @Param       tipo_administracao               query    uint8  false "Tipo de Administração"              Enums(1, 2, 3)
-// @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento"               Enums(1, 2)
-// @Param       consolidado_rpps                 query    uint8  false "Consolidado RPPS"                   Enums(1, 2)
-// @Param       indicativo_conta_contabil_rp     query    uint8  false "Indicativo de Conta Contábil de RP" Enums(1, 2)
-// @Param       indicativo_superavit_fincanceiro query    uint8  false "Indicativo de Superávit Financeiro" Enums(1, 2)
-// @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC"    Enums(1, 2)
-// @Success     200                              {array}  relatorioFIP215
+// @Param       unidade_gestora                  query    uint16 false "Código da Unidade Gestora"
+// @Param       unidade_orcamentaria             query    uint16 false "Código da Unidade Orçamentária"
+// @Param       mes_referencia                   query    uint8  true  "Mês de Referência"                                                                              Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+// @Param       mes_contabil                     query    uint8  true  "Mês Contábil (1-Execução / 2-Apuração / 3-Encerramento / 4-Todos)"                              Enums(1, 2, 3, 4)
+// @Param       tipo_poder                       query    uint8  false "Tipo de Poder (1-Executivo / 2-Legislativo / 3-Judiciário / 4-Ministério Público / 5-Todos)"    Enums(1, 2, 3, 4, 5)
+// @Param       tipo_administracao               query    uint8  false "Tipo de Administração (1-Diretas / 2-Indiretas / 3-Todas)"                                      Enums(1, 2, 3)
+// @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento (1-Encerra ao Final do Exercício / 2-Transfere para o Exercício Seguinte)" Enums(1, 2)
+// @Param       consolidado_rpps                 query    bool   false "Consolidado RPPS"                                                                               Enums(true, false)
+// @Param       indicativo_conta_contabil_rp     query    uint8  false "Indicativo de Conta Contábil de RP"                                                             Enums(1, 2)
+// @Param       indicativo_superavit_fincanceiro query    uint8  false "Indicativo de Superávit Financeiro"                                                             Enums(1, 2)
+// @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC (1-Sim / 2-Não)"                                                Enums(1, 2)
+// @Success     200                              {object} relatorioFIP215
 // @Failure     400                              {object} Erro
 // @Failure     404                              {object} Erro
 // @Failure     500                              {object} Erro
@@ -54,21 +54,21 @@ type relatorioFIP215 struct {
 func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
-		AnoExercicio                  uint16
-		UnidadeGestora                uint16
-		UnidadeOrcamentaria           uint16
+		AnoExercicio                  uint16 // Unused
+		UnidadeGestora                uint16 // Unused
+		UnidadeOrcamentaria           uint16 // Unused
 		MesReferencia                 uint8
 		MesContabil                   uint8
 		TipoPoder                     uint8
-		TipoAdministracao             uint8
+		TipoAdministracao             uint8 // Unused
 		TipoEncerramento              uint8
-		ConsolidadoRPPS               uint8
+		ConsolidadoRPPS               bool
 		IndicativoComposicaoMSC       uint8
 		IndicativoContaContabilRP     uint8
 		IndicativoSuperavitFinanceiro uint8
 
-		Meses []string
-		MesReferenciaNome string
+		Meses                     []string
+		MesReferenciaNome         string
 		MesAnteriorReferenciaNome string
 	}{}
 	/*** Parâmetros ***/
@@ -107,7 +107,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 		}
 
 		parametros.MesReferenciaNome = MesParaNome[parametros.MesReferencia]
-		parametros.MesAnteriorReferenciaNome = MesParaNome[parametros.MesReferencia - 1]
+		parametros.MesAnteriorReferenciaNome = MesParaNome[parametros.MesReferencia-1]
 	}
 
 	if err := valueBinder.MustUint8("mes_contabil", &parametros.MesContabil).BindError(); err != nil {
@@ -142,12 +142,8 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 		errors = append(errors, "Por favor, forneça um tipo de encerramento válido entre 1 e 2 para o parâmetro 'tipo_encerramento'.")
 	}
 
-	if err := valueBinder.Uint8("consolidado_rpps", &parametros.ConsolidadoRPPS).BindError(); err != nil {
+	if err := valueBinder.Bool("consolidado_rpps", &parametros.ConsolidadoRPPS).BindError(); err != nil {
 		errors = append(errors, "Por favor, forneça o consolidado do RPPS no parâmetro 'consolidado_rpps'.")
-	}
-
-	if err := Validate.Var(parametros.ConsolidadoRPPS, "gte=0,lte=2"); err != nil {
-		errors = append(errors, "Por favor, forneça um consolidado do RPPS válido entre 1 e 2 para o parâmetro 'consolidado_rpps'.")
 	}
 
 	if err := valueBinder.Uint8("indicativo_conta_contabil_rp", &parametros.IndicativoContaContabilRP).BindError(); err != nil {
@@ -237,7 +233,11 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 
 										 	  SUM(NVL(SM.VALR_DEB_{{.MesReferenciaNome}}, 0)) AS VALOR_DEBITO,
 
+												{{if eq .MesReferencia 1}}
+										 	  SUM(0) AS SALDO_ANTERIOR
+												{{else}}
 										 	  SUM(NVL(SM.VALR_{{.MesAnteriorReferenciaNome}}, 0)) AS SALDO_ANTERIOR
+												{{end}}
 										 	  
 										 	  FROM
 										 	  UNIDADE_ORCAMENTARIA UO 
@@ -253,6 +253,17 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 										 	  ITEM_DOMINIO DOMINIO_RP ON (CC.FLAG_CONTA_CONTABIL_RP = DOMINIO_RP.ID_ITEM_DOMINIO)
 										 	  LEFT JOIN
 										 	  ITEM_DOMINIO DOMINIO_ENCERRA ON (CC.FLAG_TIPO_ENCERRAMENTO = DOMINIO_ENCERRA.ID_ITEM_DOMINIO)
+
+									      WHERE UO.CD_EXERCICIO = {{.AnoExercicio}}
+
+												{{if .UnidadeGestora}}
+												{{end}}
+												
+												{{if .UnidadeOrcamentaria}}
+												{{end}}
+
+												{{if .TipoAdministracao}}
+												{{end}}
 
 												{{if eq .MesContabil 1}}
 										 	  AND SM.FLAG_MES_CONTABIL = 1428
@@ -289,12 +300,12 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 												{{end}}
 
 												{{if eq .IndicativoComposicaoMSC 1}}
-												AND CC.FLAG_SUPERAVIT_FINANCEIRO = 856
+												AND CC.FLAG_COMPOSICAO_MSC = 856
 												{{else if eq .IndicativoComposicaoMSC 2}}
-												AND CC.FLAG_SUPERAVIT_FINANCEIRO = 857
+												AND CC.FLAG_COMPOSICAO_MSC = 857
 												{{end}}
 
-												{{if eq .ConsolidadoRPPS 1}}
+												{{if .ConsolidadoRPPS}}
 												AND UO.CD_UNIDADE_ORCAMENTARIA IN (15301, 15601, 15602, 15603)
 												{{end}}
 										 	  
@@ -362,7 +373,9 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 		return ErroExecucaoTemplate
 	}
 
-	rows, err := s.db.Query(sqlQuery.String())
+	compactSqlQuery := strings.Join(strings.Fields(sqlQuery.String()), " ")
+	log.Printf("RelatorioFIP215Handler: %s", compactSqlQuery)
+	rows, err := s.db.Query(compactSqlQuery, godror.PrefetchCount(10000), godror.FetchArraySize(10000))
 
 	if err != nil {
 		log.Printf("RelatorioFIP215Handler: %v", err)
@@ -372,7 +385,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var dado dadoRelatorioFIP215
+		var dado dado
 
 		if err := rows.Scan(
 			&dado.CodigoUnidadeOrcamentaria,
