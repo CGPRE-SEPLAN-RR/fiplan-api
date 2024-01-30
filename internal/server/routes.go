@@ -24,6 +24,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
+	e.Use(middleware.Secure())
 	e.Use(middleware.Recover())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Skipper: func(c echo.Context) bool {
