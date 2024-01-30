@@ -11,6 +11,8 @@ A fazer:
     - [ ] Como saber qual o tipo de dado dos parâmetros que vou utilizar?
     - [ ] Quais os tipos de consulta que podem ser realizados?
 
+## O que é importante que eu saiba?
+
 ## Como está estruturado o projeto?
 
 O projeto está estruturado da seguinte forma:
@@ -29,12 +31,7 @@ O projeto está estruturado da seguinte forma:
 ├── go.sum
 ├── internal
 │   ├── database
-│   │   ├── database.go
-│   │   └── queries
-│   │       └── relatorio_fip215.sql
-│   ├── model
-│   │   ├── conta.go
-│   │   └── relatorio.go
+│   │   └── database.go
 │   └── server
 │       ├── conta_handler.go
 │       ├── relatorio_fip215_handler.go
@@ -54,8 +51,6 @@ As pastas têm os seguintes objetivos:
 - `docs`: contém a documentação autogerada pelo [swag](https://github.com/swaggo/swag). Essa pasta só deve ser alterada pela execução do comando `make docs`;
 - `internal`: contém a maior parte do código-fonte. Essa é a pasta na qual você mais vai mexer como desenvolvedor;
     - `internal/database`: contém o código-fonte de conexão com o banco de dados;
-    - `internal/database/queries`: contém os *scripts* SQL que serão usados para comunicação com o banco de dados. Note que todos os *scripts* se tratam de uma única *query*, composta por um ou mais `SELECT`s. Não deve haver nenhum *script* DDL, 
-    - `internal/model`: contém os modelos dos dados extraídos do banco de dados, em forma de *structs*;
     - `internal/server`: contém o código-fonte relativo ao servidor, como as suas rotas (`routes.go`), os controladores das rotas (terminados em `_handler.go`), seus *middlewares* (`server.go`);
 - `test`: contém os testes do projeto. Essa é a pasta na qual você mais vai mexer como QA;
 - `tmp`: contém os arquivos temporários criados pelo [air](https://github.com/cosmtrek/air) (responsável pelo *live reload*). Essa pasta pode ser ignorada;
@@ -74,9 +69,7 @@ Para criar um novo teste, você deve criar um novo arquivo terminado em `_test.g
 Para adicionar um novo *endpoint*, é necessário que seja criados os seguintes componentes:
 
 - [Rota](#rota)
-- [Modelo](#modelo)
 - [Controlador](#controlador)
-- [Query SQL](#query-sql) (Se necessário)
 
 ### Rota
 
@@ -96,28 +89,6 @@ Certifique-se de escolher um nome descritivo para o *endpoint* (por exemplo, `/s
 É essencial evitar conflitos de nomenclatura entre os `endpoints` neste arquivo. Caso opte por um mesmo nome, certifique-se de que o método HTTP associado seja diferente para evitar ambiguidades.
 
 Por último, é fundamental que o nome do controlador (`s.ControladorDoSeuEndpoint`) seja o mesmo do controlador que será criado posteriormente. Isso garante a correta associação entre a rota e seu manipulador correspondente. Continue abaixo para criar o controlador correspondente a este *endpoint*.
-
-### Modelo
-
-No contexto de desenvolvimento de software, um modelo refere-se a uma representação estruturada de dados que descreve as propriedades e comportamentos de uma entidade específica. Aqui, usaremos como exemplo o modelo [`RelatorioFIP215`](internal/model/relatorio.go#L15).
-
-#### `DadoRelatorioFIP215`
-
-O tipo [`DadoRelatorioFIP215`](internal/model/relatorio.go#L3) é um modelo que representa uma entrada individual no relatório FIP215. Cada instância deste tipo contém informações detalhadas sobre uma unidade orçamentária específica, incluindo seu código, nome, identificação da conta contábil, identificação da conta contábil de explosão, código da conta contábil, nome da conta contábil, saldo anterior, valor de crédito e valor de débito.
-
-A utilização das tags `json` em cada campo especifica como esses campos serão serializados quando convertidos para JSON, garantindo uma representação adequada quando os dados são enviados como resposta a uma solicitação HTTP.
-
-#### `RelatorioFIP215`
-
-O tipo `RelatorioFIP215` representa o relatório FIP215 como um todo. Ele contém um campo chamado `Dados`, que é uma lista (ou slice) de instâncias do tipo `DadoRelatorioFIP215`. Essa estrutura permite organizar e representar todas as entradas do relatório como uma coleção.
-
-A tag `@name RelatorioFIP215` é uma anotação que pode ser usada por ferramentas de documentação (como o [swag](https://github.com/swaggo/swag)) para identificar o nome da estrutura no contexto da documentação da API.
-
-#### Utilização
-
-Esses modelos são úteis porque proporcionam uma maneira estruturada de organizar os dados do relatório FIP215. Durante a execução do controlador que manipula as solicitações HTTP, os dados consultados no banco de dados são mapeados para instâncias do tipo `DadoRelatorioFIP215`, que são então agrupadas em uma instância do tipo `RelatorioFIP215`.
-
-Logo, para criar um modelo, deve ser observada a *query* SQL que será executada, e quais campos ela retorna.
 
 ### Controlador
 
@@ -142,7 +113,3 @@ Após validar os parâmetros, o controlador realiza uma consulta ao banco de dad
 #### Tratamento de Erros
 
 O código inclui tratamento adequado para possíveis erros durante a leitura do SQL, execução da consulta no banco de dados e processamento dos resultados. Erros específicos são registrados nos logs, e respostas HTTP apropriadas são enviadas em caso de falha.
-
-### Query SQL
-
-A *query* SQL fica em um arquivo `.sql` na pasta `ìnternal/database/queries`. Ela contém a solicitação que será enviada ao banco de dados, e se necessário, deve conter campos como `:1` e `:2`, que são utilizados pelo controlador para passar parâmetros personalizados pelas funções `db.Query` ou `db.QueryRow`.
