@@ -20,7 +20,6 @@ API para consulta dos dados do FIPLAN.
 - Go (>=1.21)
     - [Air](https://github.com/cosmtrek/air) (responsável pelo *live reload* do código)
     - [Swag](https://github.com/swaggo/swag) (responsável por gerar a documentação do Swagger a partir dos comentários no código)
-- [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) Basic ou Basic Light (usado para a comunicação com o banco de dados Oracle do FIPLAN pelo [`godror`](https://github.com/godror/godror))
 - Acesso a um banco de dados Oracle com as mesmas especificações do FIPLAN (realisticamente, você deve ter acesso aos bancos de desenvolvimento, homologação ou produção do FIPLAN)
 
 ## Como Iniciar o Ambiente de Desenvolvimento

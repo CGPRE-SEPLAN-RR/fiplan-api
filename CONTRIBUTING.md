@@ -6,7 +6,7 @@ A fazer:
 
 - [ ] Ser mais descritivo na construção de [Modelo](#modelo) e [Controlador](#controlador)
     - [ ] Como fazer a *godoc* do jeito certo para gerar o resultado pretendido ao executar o `make docs` (Consultar documentação do [swag](https://github.com/swaggo/swag))?
-    - [ ] Como avaliar quais são os tipos de dados que devo definir no meu modelo (Consultar documentação do [godror](https://github.com/godror/godror))?
+    - [ ] Como avaliar quais são os tipos de dados que devo definir no meu modelo (Consultar documentação do [go-ora](https://github.com/sijms/go-ora))?
     - [ ] Como fazer a validação dos parâmetros corretamente?
     - [ ] Como saber qual o tipo de dado dos parâmetros que vou utilizar?
     - [ ] Quais os tipos de consulta que podem ser realizados?

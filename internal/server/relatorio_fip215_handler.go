@@ -3,12 +3,12 @@ package server
 import (
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/godror/godror"
 	"github.com/labstack/echo/v4"
 )
 
@@ -22,6 +22,7 @@ type dado struct {
 	SaldoAnterior             float64 `json:"saldo_anterior"`
 	ValorCredito              float64 `json:"valor_credito"`
 	ValorDebito               float64 `json:"valor_debito"`
+	SaldoAtual                float64 `json:"saldo_atual"`
 }
 
 type relatorioFIP215 struct {
@@ -260,6 +261,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 												{{end}}
 												
 												{{if .UnidadeOrcamentaria}}
+												AND UO.CD_UNIDADE_ORCAMENTARIA = {{.UnidadeOrcamentaria}}
 												{{end}}
 
 												{{if .TipoAdministracao}}
@@ -356,7 +358,10 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 										RESULTADO_SALDO_INICIAL.NOME_CONTA_CONTABIL,
 										RESULTADO_SALDO_INICIAL.SALDO_ANTERIOR,
 										RESULTADO_SALDO_INICIAL.VALOR_CREDITO,
-										RESULTADO_SALDO_INICIAL.VALOR_DEBITO`
+										RESULTADO_SALDO_INICIAL.VALOR_DEBITO
+
+										ORDER BY
+										RESULTADO_SALDO_INICIAL.CODG_CONTA_CONTABIL ASC`
 
 	tmpl, err := template.New("query").Parse(queryTemplate)
 
@@ -375,7 +380,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 
 	compactSqlQuery := strings.Join(strings.Fields(sqlQuery.String()), " ")
 	log.Printf("RelatorioFIP215Handler: %s", compactSqlQuery)
-	rows, err := s.db.Query(compactSqlQuery, godror.PrefetchCount(10000), godror.FetchArraySize(10000))
+	rows, err := s.db.Query(compactSqlQuery)
 
 	if err != nil {
 		log.Printf("RelatorioFIP215Handler: %v", err)
@@ -401,6 +406,8 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 			log.Printf("RelatorioFIP215Handler: %v", err)
 			return ErroConsultaLinhaBancoDados
 		}
+
+		dado.SaldoAtual = math.Round((dado.ValorCredito - dado.ValorDebito + dado.SaldoAnterior) * 100.0) / 100.0
 
 		relatorio.Dados = append(relatorio.Dados, dado)
 	}
