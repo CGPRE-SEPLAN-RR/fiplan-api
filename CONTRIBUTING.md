@@ -2,16 +2,11 @@
 
 Este documento trata de algumas práticas comuns no desenvolvimento desse projeto, e deve servir de guia inicial para começar o desenvolvimento de novas funcionalidades ou manutenção das já existentes. Ele será muito alterado nos estágios iniciais do projeto, onde a arquitetura do sistema e os processos de desenvolvimento padrão não estão precisamente definidos.
 
-A fazer:
-
-- [ ] Ser mais descritivo na construção de [Modelo](#modelo) e [Controlador](#controlador)
-    - [ ] Como fazer a *godoc* do jeito certo para gerar o resultado pretendido ao executar o `make docs` (Consultar documentação do [swag](https://github.com/swaggo/swag))?
-    - [ ] Como avaliar quais são os tipos de dados que devo definir no meu modelo (Consultar documentação do [go-ora](https://github.com/sijms/go-ora))?
-    - [ ] Como fazer a validação dos parâmetros corretamente?
-    - [ ] Como saber qual o tipo de dado dos parâmetros que vou utilizar?
-    - [ ] Quais os tipos de consulta que podem ser realizados?
-
 ## O que é importante que eu saiba?
+
+- Em Go, os tipos, variáveis e constantes definidos no escopo global do arquivo apenas são exportados se iniciarem com letra maíúscula
+- É importante se ater ao tipo de dado correto para utilizar o mínimo de memória possível, como por exemplo:
+    - Usar `uint16` para anos de exercício, já que o ano tem sempre 4 dígitos e o uint16 permite valores de 0 a 65536
 
 ## Como está estruturado o projeto?
 
@@ -46,7 +41,7 @@ O projeto está estruturado da seguinte forma:
 
 As pastas têm os seguintes objetivos:
 
-- `bin`: ondem ficam todos os executáveis do projeto (e. g. main);
+- `bin`: ondem ficam todos os executáveis do projeto (`main`);
 - `cmd`: contém um código mínimo, responsável por iniciar o servidor. Essa pasta não deve sofrer muitas modificações;
 - `docs`: contém a documentação autogerada pelo [swag](https://github.com/swaggo/swag). Essa pasta só deve ser alterada pela execução do comando `make docs`;
 - `internal`: contém a maior parte do código-fonte. Essa é a pasta na qual você mais vai mexer como desenvolvedor;
@@ -57,12 +52,18 @@ As pastas têm os seguintes objetivos:
 
 Dada essa estrutura, é importante seguí-la para facilitar o desenvolvimento e manutenção futuros.
 
+No mais, é importante notar que cada controlador contém em um único arquivo todas informações necessárias para entender seu funcionamento, que são, nessa ordem:
+
+- Modelo de dados
+- Definição dos parâmetros
+- Validação dos parâmetros
+- *Queries* SQL
+- Consultas ao banco de dados
+- Lógica adicional
+
 ## Como criar um novo teste?
 
-Para criar um novo teste, você deve criar um novo arquivo terminado em `_test.go` na pasta `test` e inserir a lógica do seu teste nele. Alguns recursos que podem ajudar na escrita de novos testes são:
-
-- [Aprenda Go com Testes](https://larien.gitbook.io/aprenda-go-com-testes/)
-- [Test Driven Development: TDD Simples e Prático](https://www.devmedia.com.br/test-driven-development-tdd-simples-e-pratico/18533)
+O testes serão realizados a partir de relatórios gerados pelo FIPLAN, inicialmente, a fim de garantir que os dados entregados sejam os mesmos. Para isso, usaremos Python e Selenium, mas como no momento não há nenhum teste escrito, esse passo a passo está incompleto.
 
 ## Como criar um novo *endpoint*?
 
@@ -92,24 +93,13 @@ Por último, é fundamental que o nome do controlador (`s.ControladorDoSeuEndpoi
 
 ### Controlador
 
-O controlador será responsável por lidar com a lógica que deve ser executada quando o usuário consultar aquele *endpoint* específico. Como sua implementação é diferente para cada ação do usuário, ele pode ser um pouco mais complexo de se escrever. Mas, aqui destacaremos alguns pontos cruciais no desenvolvimento de um controlador, tomando como exemplo o arquivo [`relatorio_fip215_handler.go`](./internal/server/relatorio_fip215_handler.go) (Aliás, note que todos os controladores ficam em um arquivo dedicado para eles, terminado em `_handler.go`, na pasta `internal/server`):
-
-#### Estrutura
-
-O controlador segue um padrão de estrutura geral. A função `FIP215Handler` é responsável por lidar com as solicitações HTTP direcionadas ao endpoint associado ao relatório FIP215. A documentação do endpoint é fornecida no formato de anotações GoDoc para facilitar a compreensão e utilização, além de permitir a geração automática de documentação via [swag](https://github.com/swaggo/swag).
-
-#### Parâmetros
-
-Os parâmetros do *endpoint* são capturados da solicitação HTTP usando o pacote [Echo](https://echo.labstack.com/). Eles são validados para garantir que sejam fornecidos corretamente e estejam dentro dos limites esperados. Os parâmetros incluem informações como ano de exercício, unidade gestora, mês de referência, tipo de encerramento e vários outros, proporcionando flexibilidade na consulta do relatório.
-
-#### Validação de Parâmetros
-
-A seção de validação de parâmetros garante que as entradas fornecidas pelo usuário sejam válidas. Se houver algum problema na validação, o controlador retorna um erro HTTP apropriado com uma mensagem descritiva.
-
-#### Consulta ao Banco de Dados
-
-Após validar os parâmetros, o controlador realiza uma consulta ao banco de dados utilizando uma consulta SQL previamente definida. O resultado da consulta é processado e mapeado para uma estrutura de dados apropriada (`model.RelatorioFIP215`). Esses dados são então retornados como uma resposta JSON para o cliente.
-
-#### Tratamento de Erros
-
-O código inclui tratamento adequado para possíveis erros durante a leitura do SQL, execução da consulta no banco de dados e processamento dos resultados. Erros específicos são registrados nos logs, e respostas HTTP apropriadas são enviadas em caso de falha.
+1. Acesse o relatório no FIPLAN e se atenha aos campos que devem ser fornecidos como entrada (eles serão os parâmetros do *endpoint*)
+2. Acesse o relatório no FIPLAN e se atenha aos campos que são extraídos (eles serão a base para montar o modelo de dados)
+3. Acesse o código-fonte do FIPLAN e procure pelos arquivos que são usados na consulta daquele relatório (eles serão a base para a validação dos parâmetros, as *queries* SQL e para qualquer lógica adicional requisitada pelo relatório)
+4. Crie um arquivo terminado em `_handler.go` na pasta `internal/server` para conter a lógica do seu controlador
+5. Documente o relatório de acordo com o proposto pelo [swag](https://github.com/swaggo/swag)
+6. Codifique o modelo de dados do relatório
+7. Codifique os parâmetros e suas validações
+8. Codifique os templates de *query* SQL
+9. Codifique qualquer lógica adicional pendente
+10. Teste o novo controlador para verificar se os dados são iguais aos obtidos no FIPLAN
