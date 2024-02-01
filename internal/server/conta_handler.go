@@ -28,7 +28,7 @@ type relatorioContas struct {
 // @Accept      json
 // @Produce     json
 // @Param       ano_exercicio query    uint16 true "Ano de Exercício"
-// @Success     200           {array}  contaContabil
+// @Success     200           {array}  relatorioContas
 // @Failure     400           {object} Erro
 // @Failure     500           {object} Erro
 // @Router      /conta [get]
