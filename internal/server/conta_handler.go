@@ -2,8 +2,10 @@ package server
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -14,56 +16,80 @@ type contaContabil struct {
 	Nome   string `json:"nome"`
 } // @name ContaContabil
 
-// @ContaContabilHandler godoc
-// @Summary     Lista as contas
-// @Description Teste
+type relatorioContas struct {
+	Dados []contaContabil
+} // @name RelatorioContas
+
+// ContaContabilHandler godoc
+//
+// @Summary     Contas contábeis
+// @Description Lista as contas contábeis
 // @Tags        Conta
 // @Accept      json
 // @Produce     json
-// @Param       ano_exercicio query    int8 true "Ano de Exercício"
+// @Param       ano_exercicio query    uint16 true "Ano de Exercício"
 // @Success     200           {array}  contaContabil
 // @Failure     400           {object} Erro
-// @Failure     404           {object} Erro
 // @Failure     500           {object} Erro
 // @Router      /conta [get]
 func (s *Server) ContaContabilHandler(c echo.Context) error {
 	/*** Parâmetros ***/
-	var anoExercicio int16
+	parametros := struct {
+		AnoExercicio uint16
+	}{}
 	/*** Parâmetros ***/
 
 	/*** Validação dos Parâmetros ***/
-	if err := echo.QueryParamsBinder(c).MustInt16("ano_exercicio", &anoExercicio).BindError(); err != nil {
-		return echo.NewHTTPError(
-			http.StatusInternalServerError,
-			"Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.",
-		)
+	valueBinder := echo.QueryParamsBinder(c)
+
+	var errors []string
+
+	if err := valueBinder.MustUint16("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
+		errors = append(errors, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
 	}
 
-	if err := Validate.Var(anoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
-		return echo.NewHTTPError(
-			http.StatusInternalServerError,
-			fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()),
-		)
+	if err := Validate.Var(parametros.AnoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
+		errors = append(errors, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
+	}
+
+	if len(errors) > 0 {
+		return ErroValidacaoParametro(errors)
 	}
 	/*** Validação dos Parâmetros ***/
 
 	/*** Consulta no Banco de Dados ***/
-	var contas []contaContabil
+	var sqlQuery strings.Builder
 
-	sqlQuery := `SELECT CODG_CONTA_CONTABIL,NOME_CONTA_CONTABIL
-							 FROM ACWTB0032
-							 WHERE CD_EXERCICIO = :1
-							 ORDER BY CODG_CONTA_CONTABIL ASC`
+	var contasContabeis relatorioContas
 
-	rows, err := s.db.Query(sqlQuery, anoExercicio)
+	queryTemplate := `SELECT CODG_CONTA_CONTABIL,NOME_CONTA_CONTABIL
+							      FROM ACWTB0032
+							      WHERE CD_EXERCICIO = {{.AnoExercicio}}
+							      ORDER BY CODG_CONTA_CONTABIL ASC`
+
+	tmplContaExplosao, err := template.New("queryContasContabeis").Parse(queryTemplate)
 
 	if err != nil {
 		log.Printf("ContaContabilHandler: %v", err)
+		return ErroMontagemTemplate
+	}
 
-		return echo.NewHTTPError(
-			http.StatusInternalServerError,
-			"Ocorreu um erro ao consultar o banco de dados.",
-		)
+	err = tmplContaExplosao.Execute(&sqlQuery, parametros)
+
+	if err != nil {
+		log.Printf("ContaContabilHandler: %v", err)
+		return ErroExecucaoTemplate
+	}
+
+	compactSqlQuery := strings.Join(strings.Fields(sqlQuery.String()), " ")
+	log.Printf("ContaContabilHandler: %s", compactSqlQuery)
+	rows, err := s.db.Query(compactSqlQuery)
+
+	sqlQuery.Reset()
+
+	if err != nil {
+		log.Printf("ContaContabilHandler: %v", err)
+		return ErroConsultaBancoDados
 	}
 
 	defer rows.Close()
@@ -73,23 +99,17 @@ func (s *Server) ContaContabilHandler(c echo.Context) error {
 
 		if err := rows.Scan(&conta.Codigo, &conta.Nome); err != nil {
 			log.Printf("ContaContabilHandler: %v", err)
-
-			return echo.NewHTTPError(
-				http.StatusInternalServerError,
-				"Ocorreu um erro ao consultar uma linha no banco de dados.",
-			)
+			return ErroConsultaLinhaBancoDados
 		}
 
-		contas = append(contas, conta)
+		contasContabeis.Dados = append(contasContabeis.Dados, conta)
 	}
 
 	if err := rows.Err(); err != nil {
-		return echo.NewHTTPError(
-			http.StatusInternalServerError,
-			"Ocorreu um erro de rede ou problema no resultado do banco de dados.",
-		)
+		log.Printf("ContaContabilHandler: %v", err)
+		return ErroRedeOuResultadoBancoDados
 	}
 	/*** Consulta no Banco de Dados ***/
 
-	return c.JSON(http.StatusOK, contas)
+	return c.JSON(http.StatusOK, contasContabeis)
 }
