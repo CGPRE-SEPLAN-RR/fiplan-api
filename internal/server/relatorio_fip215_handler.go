@@ -31,9 +31,10 @@ type relatorioFIP215 struct {
 	Dados []dado
 } // @name RelatorioFIP215
 
-// @RelatorioFIP215Handler godoc
+// RelatorioFIP215Handler godoc
+//
 // @Summary     FIP215 - Balancete Mensal de Verificação
-// @Description Teste
+// @Description Fornece o balancete mensal de verificação
 // @Tags        Relatório
 // @Accept      json
 // @Produce     json
@@ -52,7 +53,6 @@ type relatorioFIP215 struct {
 // @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC (1-Sim / 2-Não)"                                                Enums(1, 2)
 // @Success     200                              {object} relatorioFIP215
 // @Failure     400                              {object} Erro
-// @Failure     404                              {object} Erro
 // @Failure     500                              {object} Erro
 // @Router      /relatorio/fip_215 [get]
 func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
@@ -507,7 +507,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 			return ErroConsultaLinhaBancoDados
 		}
 
-		dado.SaldoAtual = dado.ValorCredito-dado.ValorDebito+dado.SaldoAnterior
+		dado.SaldoAtual = dado.ValorCredito - dado.ValorDebito + dado.SaldoAnterior
 
 		contasContabeisEspecificas.Dados = append(contasContabeisEspecificas.Dados, dado)
 	}
