@@ -5,6 +5,8 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"slices"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -23,7 +25,7 @@ type dado struct {
 	ValorCredito              float64 `json:"valor_credito"`
 	ValorDebito               float64 `json:"valor_debito"`
 	SaldoAtual                float64 `json:"saldo_atual"`
-}
+} // @name DadoRelatorioFIP215
 
 type relatorioFIP215 struct {
 	Dados []dado
@@ -39,11 +41,12 @@ type relatorioFIP215 struct {
 // @Param       unidade_gestora                  query    uint16 false "Código da Unidade Gestora"
 // @Param       unidade_orcamentaria             query    uint16 false "Código da Unidade Orçamentária"
 // @Param       mes_referencia                   query    uint8  true  "Mês de Referência"                                                                              Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+// @Param       ate_mes_referencia               query    bool   false "Contabilizar do Início do Exercício até o Mês de Referência?"                                   Enums(true, false)
 // @Param       mes_contabil                     query    uint8  true  "Mês Contábil (1-Execução / 2-Apuração / 3-Encerramento / 4-Todos)"                              Enums(1, 2, 3, 4)
 // @Param       tipo_poder                       query    uint8  false "Tipo de Poder (1-Executivo / 2-Legislativo / 3-Judiciário / 4-Ministério Público / 5-Todos)"    Enums(1, 2, 3, 4, 5)
 // @Param       tipo_administracao               query    uint8  false "Tipo de Administração (1-Diretas / 2-Indiretas / 3-Todas)"                                      Enums(1, 2, 3)
 // @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento (1-Encerra ao Final do Exercício / 2-Transfere para o Exercício Seguinte)" Enums(1, 2)
-// @Param       consolidado_rpps                 query    bool   false "Consolidado RPPS"                                                                               Enums(true, false)
+// @Param       consolidado_rpps                 query    bool   false "Consolidado RPPS?"                                                                               Enums(true, false)
 // @Param       indicativo_conta_contabil_rp     query    uint8  false "Indicativo de Conta Contábil de RP"                                                             Enums(1, 2)
 // @Param       indicativo_superavit_fincanceiro query    uint8  false "Indicativo de Superávit Financeiro"                                                             Enums(1, 2)
 // @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC (1-Sim / 2-Não)"                                                Enums(1, 2)
@@ -56,13 +59,13 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
 		// FIPLAN
-		AnoExercicio                  uint16 // Unused
-		UnidadeGestora                uint16 // Unused
-		UnidadeOrcamentaria           uint16 // Unused
+		AnoExercicio                  uint16
+		UnidadeGestora                uint16
+		UnidadeOrcamentaria           uint16
 		MesReferencia                 uint8
 		MesContabil                   uint8
 		TipoPoder                     uint8
-		TipoAdministracao             uint8 // Unused
+		TipoAdministracao             uint8
 		TipoEncerramento              uint8
 		ConsolidadoRPPS               bool
 		IndicativoComposicaoMSC       uint8
@@ -191,32 +194,32 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	var contasContabeis relatorioFIP215
 
 	queryContaContabeisTemplate := `SELECT
-			                           CONTA_CONTABIL.IDEN_CONTA_CONTABIL,
-																 NVL(TO_CHAR(CONTA_CONTABIL.CONTA_EXPLOSAO), ' ') AS CONTA_EXPLOSAO,
-			                           CONTA_CONTABIL.CODG_CONTA_CONTABIL,
-			                           CONTA_CONTABIL.NOME_CONTA_CONTABIL
+			                            CONTA_CONTABIL.IDEN_CONTA_CONTABIL,
+																  NVL(TO_CHAR(CONTA_CONTABIL.CONTA_EXPLOSAO), ' ') AS CONTA_EXPLOSAO,
+			                            CONTA_CONTABIL.CODG_CONTA_CONTABIL,
+			                            CONTA_CONTABIL.NOME_CONTA_CONTABIL
 
-			                           FROM
-			                           ACWTB0032 CONTA_CONTABIL,
-			                           ACWTB0069 SUB_ITEM,
-			                           ACWTB0068 ITEM,
-			                           ACWTB0067 SUB_ELEMENTO,
-			                           ACWTB0066 ELEMENTO,
-			                           ACWTB0065 SUB_GRUPO,
-			                           ACWTB0064 GRUPO,
-			                           ACWTB0063 CLASSE,
-			                           ITEM_DOMINIO FLAG_ESCRITURACAO
+			                            FROM
+			                            ACWTB0032 CONTA_CONTABIL,
+			                            ACWTB0069 SUB_ITEM,
+			                            ACWTB0068 ITEM,
+			                            ACWTB0067 SUB_ELEMENTO,
+			                            ACWTB0066 ELEMENTO,
+			                            ACWTB0065 SUB_GRUPO,
+			                            ACWTB0064 GRUPO,
+			                            ACWTB0063 CLASSE,
+			                            ITEM_DOMINIO FLAG_ESCRITURACAO
 
-			                           WHERE CONTA_CONTABIL.IDEN_SUBITEM = SUB_ITEM.IDEN_SUBITEM
-			                           AND SUB_ITEM.IDEN_ITEM = ITEM.IDEN_ITEM
-			                           AND ITEM.IDEN_SUBELEMENTO = SUB_ELEMENTO.IDEN_SUBELEMENTO
-			                           AND SUB_ELEMENTO.IDEN_ELEMENTO = ELEMENTO.IDEN_ELEMENTO
-			                           AND ELEMENTO.IDEN_SUBGRUPO = SUB_GRUPO.IDEN_SUBGRUPO
-			                           AND SUB_GRUPO.IDEN_GRUPO = GRUPO.IDEN_GRUPO
-			                           AND GRUPO.IDEN_CLASSE = CLASSE.IDEN_CLASSE
-			                           AND CONTA_CONTABIL.FLAG_ESCRITURACAO = FLAG_ESCRITURACAO.ID_ITEM_DOMINIO
-			                           AND CLASSE.CD_EXERCICIO = {{.}}
-			                           AND FLAG_ESCRITURACAO.CD_ITEM_DOMINIO = 2`
+			                            WHERE CONTA_CONTABIL.IDEN_SUBITEM = SUB_ITEM.IDEN_SUBITEM
+			                            AND SUB_ITEM.IDEN_ITEM = ITEM.IDEN_ITEM
+			                            AND ITEM.IDEN_SUBELEMENTO = SUB_ELEMENTO.IDEN_SUBELEMENTO
+			                            AND SUB_ELEMENTO.IDEN_ELEMENTO = ELEMENTO.IDEN_ELEMENTO
+			                            AND ELEMENTO.IDEN_SUBGRUPO = SUB_GRUPO.IDEN_SUBGRUPO
+			                            AND SUB_GRUPO.IDEN_GRUPO = GRUPO.IDEN_GRUPO
+			                            AND GRUPO.IDEN_CLASSE = CLASSE.IDEN_CLASSE
+			                            AND CONTA_CONTABIL.FLAG_ESCRITURACAO = FLAG_ESCRITURACAO.ID_ITEM_DOMINIO
+			                            AND CLASSE.CD_EXERCICIO = {{.}}
+			                            AND FLAG_ESCRITURACAO.CD_ITEM_DOMINIO = 2`
 
 	tmplContaExplosao, err := template.New("queryContasContabeis").Parse(queryContaContabeisTemplate)
 
@@ -357,6 +360,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 									                                WHERE UO.CD_EXERCICIO = {{.AnoExercicio}}
 
 										                          		{{if .UnidadeGestora}}
+																									AND UG.CD_UNIDADE_GESTORA = {{.UnidadeGestora}}
 										                          		{{end}}
 										                          		
 										                          		{{if .UnidadeOrcamentaria}}
@@ -364,6 +368,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 										                          		{{end}}
 
 										                          		{{if .TipoAdministracao}}
+																									AND LOWER(UO.FLG_TIPO_ADM) = '{{.TipoAdministracao}}'
 										                          		{{end}}
 
 										                          		{{if eq .MesContabil 1}}
@@ -502,7 +507,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 			return ErroConsultaLinhaBancoDados
 		}
 
-		dado.SaldoAtual = math.Round((dado.ValorCredito-dado.ValorDebito+dado.SaldoAnterior)*100.0) / 100.0
+		dado.SaldoAtual = dado.ValorCredito-dado.ValorDebito+dado.SaldoAnterior
 
 		contasContabeisEspecificas.Dados = append(contasContabeisEspecificas.Dados, dado)
 	}
@@ -516,32 +521,71 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	/*** Lógica Adicional ***/
 	contasContabeis.Dados = append(contasContabeis.Dados, contasContabeisEspecificas.Dados...)
 
-	for _, contaContabil := range contasContabeis.Dados {
-		camposPresentes := strings.Split(contaContabil.CodigoContaContabil, ".")
-		var primeiroCampo, campoInteresse int
-
-		for i, campo := range camposPresentes {
-			if i == len(camposPresentes) - 1 {
-				relatorio.Dados = append(relatorio.Dados, contaContabil)
-				break
+	sort.Slice(contasContabeis.Dados, func(i, j int) bool {
+		for in := len(contasContabeis.Dados[i].CodigoContaContabil) - 1; in >= 0; in-- {
+			if contasContabeis.Dados[i].CodigoContaContabil[in] != '0' && contasContabeis.Dados[i].CodigoContaContabil[in] != '.' {
+				return true
 			}
+			if contasContabeis.Dados[j].CodigoContaContabil[in] != '0' && contasContabeis.Dados[j].CodigoContaContabil[in] != '.' {
+				return false
+			}
+		}
 
-			soZero := true
+		return false
+	})
 
-			for _, caractere := range campo {
+	for i, contaContabil := range contasContabeis.Dados {
+		codigoContaContabil := strings.ReplaceAll(contaContabil.CodigoContaContabil, ".", "")
+		indiceUltimoDigitoNaoZero := 0
+
+		for j, caractere := range codigoContaContabil {
+			if caractere != '0' {
+				indiceUltimoDigitoNaoZero = j
+			}
+		}
+
+		digitosNaoRelevantes := []int{5, 7, 9}
+		if slices.Contains(digitosNaoRelevantes, indiceUltimoDigitoNaoZero) {
+			indiceUltimoDigitoNaoZero++
+		}
+
+		codigoPrefixo := codigoContaContabil[:indiceUltimoDigitoNaoZero+1]
+
+		for _, contaContabilInterna := range contasContabeis.Dados {
+			codigoContaContabilInterno := strings.ReplaceAll(contaContabilInterna.CodigoContaContabil, ".", "")
+			indiceUltimoDigitoNaoZeroInterno := 0
+
+			for j, caractere := range codigoContaContabilInterno {
 				if caractere != '0' {
-					soZero = false
-					break
+					indiceUltimoDigitoNaoZeroInterno = j
 				}
 			}
 
-			if soZero {
-				primeiroCampo = i + 1
-				campoInteresse = primeiroCampo + 1
-				break
+			if slices.Contains(digitosNaoRelevantes, indiceUltimoDigitoNaoZeroInterno) {
+				indiceUltimoDigitoNaoZeroInterno++
+			}
+
+			if strings.HasPrefix(codigoContaContabilInterno, codigoPrefixo) {
+				if (indiceUltimoDigitoNaoZero < 4 && indiceUltimoDigitoNaoZeroInterno == indiceUltimoDigitoNaoZero+1) || (indiceUltimoDigitoNaoZero >= 4 && indiceUltimoDigitoNaoZeroInterno == indiceUltimoDigitoNaoZero+2) {
+					contasContabeis.Dados[i].ValorDebito += contaContabilInterna.ValorDebito
+					contasContabeis.Dados[i].ValorCredito += contaContabilInterna.ValorCredito
+					contasContabeis.Dados[i].SaldoAtual += contaContabilInterna.SaldoAtual
+					contasContabeis.Dados[i].SaldoAnterior += contaContabilInterna.SaldoAnterior
+				}
 			}
 		}
 	}
+
+	for i := 0; i < len(contasContabeis.Dados); i++ {
+		contasContabeis.Dados[i].ValorDebito = math.Round(contasContabeis.Dados[i].ValorDebito*100.0) / 100.0
+		contasContabeis.Dados[i].ValorCredito = math.Round(contasContabeis.Dados[i].ValorCredito*100.0) / 100.0
+		contasContabeis.Dados[i].SaldoAtual = math.Round(contasContabeis.Dados[i].SaldoAtual*100.0) / 100.0
+		contasContabeis.Dados[i].SaldoAnterior = math.Round(contasContabeis.Dados[i].SaldoAnterior*100.0) / 100.0
+	}
+
+	sort.Slice(contasContabeis.Dados, func(i, j int) bool {
+		return contasContabeis.Dados[i].CodigoContaContabil < contasContabeis.Dados[j].CodigoContaContabil
+	})
 	/*** Lógica Adicional ***/
 
 	return c.JSON(http.StatusOK, contasContabeis)
