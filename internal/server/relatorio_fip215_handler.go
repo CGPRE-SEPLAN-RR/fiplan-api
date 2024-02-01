@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type dado struct {
+type dadoRelatorioFIP215 struct {
 	CodigoUnidadeOrcamentaria string  `json:"codigo_unidade_orcamentaria"`
 	NomeUnidadeOrcamentaria   string  `json:"nome_unidade_orcamentaria"`
 	IDContaContabil           string  `json:"id_conta_contabil"`
@@ -28,7 +28,7 @@ type dado struct {
 } // @name DadoRelatorioFIP215
 
 type relatorioFIP215 struct {
-	Dados []dado
+	Dados []dadoRelatorioFIP215
 } // @name RelatorioFIP215
 
 // RelatorioFIP215Handler godoc
@@ -47,7 +47,7 @@ type relatorioFIP215 struct {
 // @Param       tipo_poder                       query    uint8  false "Tipo de Poder (1-Executivo / 2-Legislativo / 3-Judiciário / 4-Ministério Público / 5-Todos)"    Enums(1, 2, 3, 4, 5)
 // @Param       tipo_administracao               query    uint8  false "Tipo de Administração (1-Diretas / 2-Indiretas / 3-Todas)"                                      Enums(1, 2, 3)
 // @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento (1-Encerra ao Final do Exercício / 2-Transfere para o Exercício Seguinte)" Enums(1, 2)
-// @Param       consolidado_rpps                 query    bool   false "Consolidado RPPS?"                                                                               Enums(true, false)
+// @Param       consolidado_rpps                 query    bool   false "Consolidado RPPS?"                                                                              Enums(true, false)
 // @Param       indicativo_conta_contabil_rp     query    uint8  false "Indicativo de Conta Contábil de RP"                                                             Enums(1, 2)
 // @Param       indicativo_superavit_fincanceiro query    uint8  false "Indicativo de Superávit Financeiro"                                                             Enums(1, 2)
 // @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC (1-Sim / 2-Não)"                                                Enums(1, 2)
@@ -249,7 +249,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var dado dado
+		var dado dadoRelatorioFIP215
 
 		if err := rows.Scan(
 			&dado.IDContaContabil,
@@ -490,7 +490,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var dado dado
+		var dado dadoRelatorioFIP215
 
 		if err := rows.Scan(
 			&dado.CodigoUnidadeOrcamentaria,
