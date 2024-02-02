@@ -27,7 +27,7 @@ type relatorioContas struct {
 // @Tags        Conta
 // @Accept      json
 // @Produce     json
-// @Param       ano_exercicio query    uint16 true "Ano de Exercício"
+// @Param       ano_exercicio query    int true "Ano de Exercício"
 // @Success     200           {array}  relatorioContas
 // @Failure     400           {object} Erro
 // @Failure     500           {object} Erro
@@ -35,25 +35,25 @@ type relatorioContas struct {
 func ContaContabilHandler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
-		AnoExercicio uint16
+		AnoExercicio int
 	}{}
 	/*** Parâmetros ***/
 
 	/*** Validação dos Parâmetros ***/
 	valueBinder := echo.QueryParamsBinder(c)
 
-	var errors []string
+	var erros []string
 
-	if err := valueBinder.MustUint16("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
+	if err := valueBinder.MustInt("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
 	}
 
 	if err := Validate.Var(parametros.AnoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
-		errors = append(errors, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
+		erros = append(erros, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
 	}
 
-	if len(errors) > 0 {
-		return ErroValidacaoParametro(errors)
+	if len(erros) > 0 {
+		return ErroValidacaoParametro(erros)
 	}
 	/*** Validação dos Parâmetros ***/
 

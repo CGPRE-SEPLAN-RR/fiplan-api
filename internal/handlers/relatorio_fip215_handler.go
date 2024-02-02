@@ -38,19 +38,19 @@ type relatorioFIP215 struct {
 // @Tags        Relatório
 // @Accept      json
 // @Produce     json
-// @Param       ano_exercicio                    query    uint16 true  "Ano de Exercício"
-// @Param       unidade_gestora                  query    uint16 false "Código da Unidade Gestora"
-// @Param       unidade_orcamentaria             query    uint16 false "Código da Unidade Orçamentária"
-// @Param       mes_referencia                   query    uint8  true  "Mês de Referência"                                                                              Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-// @Param       ate_mes_referencia               query    bool   false "Contabilizar do Início do Exercício até o Mês de Referência?"                                   Enums(true, false)
-// @Param       mes_contabil                     query    uint8  true  "Mês Contábil (1-Execução / 2-Apuração / 3-Encerramento / 4-Todos)"                              Enums(1, 2, 3, 4)
-// @Param       tipo_poder                       query    uint8  false "Tipo de Poder (1-Executivo / 2-Legislativo / 3-Judiciário / 4-Ministério Público / 5-Todos)"    Enums(1, 2, 3, 4, 5)
-// @Param       tipo_administracao               query    uint8  false "Tipo de Administração (1-Diretas / 2-Indiretas / 3-Todas)"                                      Enums(1, 2, 3)
-// @Param       tipo_encerramento                query    uint8  false "Tipo de Encerramento (1-Encerra ao Final do Exercício / 2-Transfere para o Exercício Seguinte)" Enums(1, 2)
-// @Param       consolidado_rpps                 query    bool   false "Consolidado RPPS?"                                                                              Enums(true, false)
-// @Param       indicativo_conta_contabil_rp     query    uint8  false "Indicativo de Conta Contábil de RP"                                                             Enums(1, 2)
-// @Param       indicativo_superavit_fincanceiro query    uint8  false "Indicativo de Superávit Financeiro"                                                             Enums(1, 2)
-// @Param       indicativo_composicao_msc        query    uint8  false "Indicativo de Composição da MSC (1-Sim / 2-Não)"                                                Enums(1, 2)
+// @Param       ano_exercicio                    query    int  true  "Ano de Exercício"
+// @Param       unidade_gestora                  query    int  false "Código da Unidade Gestora"
+// @Param       unidade_orcamentaria             query    int  false "Código da Unidade Orçamentária"
+// @Param       mes_referencia                   query    int  true  "Mês de Referência"                                                                              Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+// @Param       ate_mes_referencia               query    bool false "Contabilizar do Início do Exercício até o Mês de Referência?"                                   Enums(true, false)
+// @Param       mes_contabil                     query    int  true  "Mês Contábil (1-Execução / 2-Apuração / 3-Encerramento / 4-Todos)"                              Enums(1, 2, 3, 4)
+// @Param       tipo_poder                       query    int  false "Tipo de Poder (1-Executivo / 2-Legislativo / 3-Judiciário / 4-Ministério Público / 5-Todos)"    Enums(1, 2, 3, 4, 5)
+// @Param       tipo_administracao               query    int  false "Tipo de Administração (1-Diretas / 2-Indiretas / 3-Todas)"                                      Enums(1, 2, 3)
+// @Param       tipo_encerramento                query    int  false "Tipo de Encerramento (1-Encerra ao Final do Exercício / 2-Transfere para o Exercício Seguinte)" Enums(1, 2)
+// @Param       consolidado_rpps                 query    bool false "Consolidado RPPS?"                                                                              Enums(true, false)
+// @Param       indicativo_conta_contabil_rp     query    int  false "Indicativo de Conta Contábil de RP"                                                             Enums(1, 2)
+// @Param       indicativo_superavit_fincanceiro query    int  false "Indicativo de Superávit Financeiro"                                                             Enums(1, 2)
+// @Param       indicativo_composicao_msc        query    int  false "Indicativo de Composição da MSC (1-Sim / 2-Não)"                                                Enums(1, 2)
 // @Success     200                              {object} relatorioFIP215
 // @Failure     400                              {object} Erro
 // @Failure     500                              {object} Erro
@@ -59,62 +59,61 @@ func RelatorioFIP215Handler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
 		// FIPLAN
-		AnoExercicio                  uint16
-		UnidadeGestora                uint16
-		UnidadeOrcamentaria           uint16
-		MesReferencia                 uint8
-		MesContabil                   uint8
-		TipoPoder                     uint8
-		TipoAdministracao             uint8
-		TipoEncerramento              uint8
+		AnoExercicio                  int
+		UnidadeGestora                int
+		UnidadeOrcamentaria           int
+		MesReferencia                 int
+		MesContabil                   int
+		TipoPoder                     int
+		TipoAdministracao             int
+		TipoEncerramento              int
+		IndicativoComposicaoMSC       int
+		IndicativoContaContabilRP     int
+		IndicativoSuperavitFinanceiro int
 		ConsolidadoRPPS               bool
-		IndicativoComposicaoMSC       uint8
-		IndicativoContaContabilRP     uint8
-		IndicativoSuperavitFinanceiro uint8
 
 		// Adicionais
-		Meses                     []string
 		AteMesReferencia          bool
 		MesReferenciaNome         string
 		MesAnteriorReferenciaNome string
+		Meses                     []string
 	}{}
 	/*** Parâmetros ***/
 
 	/*** Validação dos Parâmetros ***/
 	valueBinder := echo.QueryParamsBinder(c)
 
-	var errors []string
+	var erros []string
 
-	if err := valueBinder.MustUint16("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
+	if err := valueBinder.MustInt("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
 	}
 
 	if err := Validate.Var(parametros.AnoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
-		errors = append(errors, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
+		erros = append(erros, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
 	}
 
-	if err := valueBinder.Uint16("unidade_gestora", &parametros.UnidadeGestora).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça a unidade gestora no parâmetro 'unidade_gestora'.")
+	if err := valueBinder.Int("unidade_gestora", &parametros.UnidadeGestora).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça a unidade gestora no parâmetro 'unidade_gestora'.")
 	}
 
-	if err := valueBinder.Uint16("unidade_orcamentaria", &parametros.UnidadeOrcamentaria).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça a unidade orçamentária no parâmetro 'unidade_orcamentaria'.")
+	if err := valueBinder.Int("unidade_orcamentaria", &parametros.UnidadeOrcamentaria).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça a unidade orçamentária no parâmetro 'unidade_orcamentaria'.")
 	}
 
-	if err := valueBinder.MustUint8("mes_referencia", &parametros.MesReferencia).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o mês de referência no parâmetro 'mes_referencia'.")
+	if err := valueBinder.MustInt("mes_referencia", &parametros.MesReferencia).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o mês de referência no parâmetro 'mes_referencia'.")
 	}
 
 	if err := valueBinder.Bool("ate_mes_referencia", &parametros.AteMesReferencia).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça se o relatório deve ir do início do exercício até o mês de referência no parâmetro 'ate_mes_referencia'.")
+		erros = append(erros, "Por favor, forneça se o relatório deve ir do início do exercício até o mês de referência no parâmetro 'ate_mes_referencia'.")
 	}
 
 	if err := Validate.Var(parametros.MesReferencia, "gte=1,lte=12"); err != nil {
-		errors = append(errors, "Por favor, forneça um mês de referência válido entre 1 e 12 para o parâmetro 'mes_referencia'.")
+		erros = append(erros, "Por favor, forneça um mês de referência válido entre 1 e 12 para o parâmetro 'mes_referencia'.")
 	} else {
 		if parametros.AteMesReferencia {
-			var i uint8
-			for i = 1; i < parametros.MesReferencia; i++ {
+			for i := 1; i < parametros.MesReferencia; i++ {
 				parametros.Meses = append(parametros.Meses, MesParaNome[i])
 			}
 		}
@@ -123,68 +122,68 @@ func RelatorioFIP215Handler(c echo.Context) error {
 		parametros.MesAnteriorReferenciaNome = MesParaNome[parametros.MesReferencia-1]
 	}
 
-	if err := valueBinder.MustUint8("mes_contabil", &parametros.MesContabil).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o mês contábil no parâmetro 'mes_contabil'.")
+	if err := valueBinder.MustInt("mes_contabil", &parametros.MesContabil).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o mês contábil no parâmetro 'mes_contabil'.")
 	}
 
 	if err := Validate.Var(parametros.MesContabil, "gte=1,lte=4"); err != nil {
-		errors = append(errors, "Por favor, forneça um mês contábil válido entre 1 e 4 para o parâmetro 'mes_contabil'.")
+		erros = append(erros, "Por favor, forneça um mês contábil válido entre 1 e 4 para o parâmetro 'mes_contabil'.")
 	}
 
-	if err := valueBinder.Uint8("tipo_poder", &parametros.TipoPoder).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o tipo de poder no parâmetro 'tipo_poder'.")
+	if err := valueBinder.Int("tipo_poder", &parametros.TipoPoder).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o tipo de poder no parâmetro 'tipo_poder'.")
 	}
 
 	if err := Validate.Var(parametros.TipoPoder, "gte=0,lte=5"); err != nil {
-		errors = append(errors, "Por favor, forneça um tipo de poder válido entre 1 e 5 para o parâmetro 'tipo_poder'.")
+		erros = append(erros, "Por favor, forneça um tipo de poder válido entre 1 e 5 para o parâmetro 'tipo_poder'.")
 	}
 
-	if err := valueBinder.Uint8("tipo_administracao", &parametros.TipoAdministracao).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o tipo de administração no parâmetro 'tipo_administracao'.")
+	if err := valueBinder.Int("tipo_administracao", &parametros.TipoAdministracao).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o tipo de administração no parâmetro 'tipo_administracao'.")
 	}
 
 	if err := Validate.Var(parametros.TipoAdministracao, "gte=0,lte=3"); err != nil {
-		errors = append(errors, "Por favor, forneça um tipo de administração válido entre 1 e 3 para o parâmetro 'tipo_administracao'.")
+		erros = append(erros, "Por favor, forneça um tipo de administração válido entre 1 e 3 para o parâmetro 'tipo_administracao'.")
 	}
 
-	if err := valueBinder.Uint8("tipo_encerramento", &parametros.TipoEncerramento).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o tipo de encerramento no parâmetro 'tipo_encerramento'.")
+	if err := valueBinder.Int("tipo_encerramento", &parametros.TipoEncerramento).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o tipo de encerramento no parâmetro 'tipo_encerramento'.")
 	}
 
 	if err := Validate.Var(parametros.TipoEncerramento, "gte=0,lte=2"); err != nil {
-		errors = append(errors, "Por favor, forneça um tipo de encerramento válido entre 1 e 2 para o parâmetro 'tipo_encerramento'.")
+		erros = append(erros, "Por favor, forneça um tipo de encerramento válido entre 1 e 2 para o parâmetro 'tipo_encerramento'.")
 	}
 
 	if err := valueBinder.Bool("consolidado_rpps", &parametros.ConsolidadoRPPS).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o consolidado do RPPS no parâmetro 'consolidado_rpps'.")
+		erros = append(erros, "Por favor, forneça o consolidado do RPPS no parâmetro 'consolidado_rpps'.")
 	}
 
-	if err := valueBinder.Uint8("indicativo_conta_contabil_rp", &parametros.IndicativoContaContabilRP).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o indicativo de conta contábil de RP no parâmetro 'indicativo_conta_contabil_rp'.")
+	if err := valueBinder.Int("indicativo_conta_contabil_rp", &parametros.IndicativoContaContabilRP).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o indicativo de conta contábil de RP no parâmetro 'indicativo_conta_contabil_rp'.")
 	}
 
 	if err := Validate.Var(parametros.IndicativoContaContabilRP, "gte=0,lte=2"); err != nil {
-		errors = append(errors, "Por favor, forneça um indicativo de conta contábil de RP válido entre 1 e 2 para o parâmetro 'indicativo_conta_contabil_rp'.")
+		erros = append(erros, "Por favor, forneça um indicativo de conta contábil de RP válido entre 1 e 2 para o parâmetro 'indicativo_conta_contabil_rp'.")
 	}
 
-	if err := valueBinder.Uint8("indicativo_superavit_fincanceiro", &parametros.IndicativoSuperavitFinanceiro).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o indicativo de superávit financeiro no parâmetro 'indicativo_superavit_fincanceiro'.")
+	if err := valueBinder.Int("indicativo_superavit_fincanceiro", &parametros.IndicativoSuperavitFinanceiro).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o indicativo de superávit financeiro no parâmetro 'indicativo_superavit_fincanceiro'.")
 	}
 
 	if err := Validate.Var(parametros.IndicativoSuperavitFinanceiro, "gte=0,lte=2"); err != nil {
-		errors = append(errors, "Por favor, forneça um indicativo de superávit financeiro válido entre 1 e 2 para o parâmetro 'indicativo_superavit_fincanceiro'.")
+		erros = append(erros, "Por favor, forneça um indicativo de superávit financeiro válido entre 1 e 2 para o parâmetro 'indicativo_superavit_fincanceiro'.")
 	}
 
-	if err := valueBinder.Uint8("indicativo_composicao_msc", &parametros.IndicativoComposicaoMSC).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o indicativo de composição da MSC no parâmetro 'indicativoComposicaoMSC'.")
+	if err := valueBinder.Int("indicativo_composicao_msc", &parametros.IndicativoComposicaoMSC).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o indicativo de composição da MSC no parâmetro 'indicativoComposicaoMSC'.")
 	}
 
 	if err := Validate.Var(parametros.IndicativoComposicaoMSC, "gte=0,lte=2"); err != nil {
-		errors = append(errors, "Por favor, forneça um indicativo de composição da MSC válido entre 1 e 2 para o parâmetro 'indicativo_composicao_msc'.")
+		erros = append(erros, "Por favor, forneça um indicativo de composição da MSC válido entre 1 e 2 para o parâmetro 'indicativo_composicao_msc'.")
 	}
 
-	if len(errors) > 0 {
-		return ErroValidacaoParametro(errors)
+	if len(erros) > 0 {
+		return ErroValidacaoParametro(erros)
 	}
 	/*** Validação dos Parâmetros ***/
 

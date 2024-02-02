@@ -29,10 +29,10 @@ type relatorioFIP215M struct {
 // @Tags        Relatório
 // @Accept      json
 // @Produce     json
-// @Param       ano_exercicio                    query    uint16 true  "Ano de Exercício"
-// @Param       mes_referencia                   query    uint8  true  "Mês de Referência"                                Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-// @Param       mes_contabil                     query    uint8  true  "Mês Contábil (1-Execução / 2-Apuração / 3-Todos)" Enums(1, 2, 3)
-// @Param       codigo_poder_orgao               query    uint16 true  "Código do Poder/Órgão SICONFI"
+// @Param       ano_exercicio                    query    int true "Ano de Exercício"
+// @Param       mes_referencia                   query    int true "Mês de Referência"                                Enums(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+// @Param       mes_contabil                     query    int true "Mês Contábil (1-Execução / 2-Apuração / 3-Todos)" Enums(1, 2, 3)
+// @Param       codigo_poder_orgao               query    int true "Código do Poder/Órgão SICONFI"
 // @Success     200                              {object} relatorioFIP215
 // @Failure     400                              {object} Erro
 // @Failure     500                              {object} Erro
@@ -41,10 +41,10 @@ func RelatorioFIP215MHandler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
 		// FIPLAN
-		AnoExercicio     uint16
-		MesReferencia    uint8
-		MesContabil      uint8
-		CodigoPoderOrgao uint32
+		AnoExercicio     int
+		MesReferencia    int
+		MesContabil      int
+		CodigoPoderOrgao int
 
 		// Adicionai
 		MesReferenciaNome string
@@ -55,44 +55,44 @@ func RelatorioFIP215MHandler(c echo.Context) error {
 	/*** Validação dos Parâmetros ***/
 	valueBinder := echo.QueryParamsBinder(c)
 
-	var errors []string
+	var erros []string
 
-	if err := valueBinder.MustUint16("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
+	if err := valueBinder.MustInt("ano_exercicio", &parametros.AnoExercicio).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o ano de exercício no parâmetro 'ano_exercicio'.")
 	}
 
 	if err := Validate.Var(parametros.AnoExercicio, fmt.Sprintf("gte=2010,lte=%d", time.Now().Year())); err != nil {
-		errors = append(errors, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
+		erros = append(erros, fmt.Sprintf("Por favor, forneça um ano de exercício válido entre 2010 e %d para o parâmetro 'ano_exercicio'.", time.Now().Year()))
 	}
 
-	if err := valueBinder.MustUint8("mes_referencia", &parametros.MesReferencia).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o mês de referência no parâmetro 'mes_referencia'.")
+	if err := valueBinder.MustInt("mes_referencia", &parametros.MesReferencia).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o mês de referência no parâmetro 'mes_referencia'.")
 	}
 
 	if err := Validate.Var(parametros.MesReferencia, "gte=1,lte=12"); err != nil {
-		errors = append(errors, "Por favor, forneça um mês de referência válido entre 1 e 12 para o parâmetro 'mes_referencia'.")
+		erros = append(erros, "Por favor, forneça um mês de referência válido entre 1 e 12 para o parâmetro 'mes_referencia'.")
 	} else {
 		parametros.MesReferenciaNome = MesParaNome[parametros.MesReferencia]
 	}
 
-	if err := valueBinder.MustUint8("mes_contabil", &parametros.MesContabil).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o mês contábil no parâmetro 'mes_contabil'.")
+	if err := valueBinder.MustInt("mes_contabil", &parametros.MesContabil).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o mês contábil no parâmetro 'mes_contabil'.")
 	}
 
 	if err := Validate.Var(parametros.MesContabil, "gte=1,lte=3"); err != nil {
-		errors = append(errors, "Por favor, forneça um mês contábil válido entre 1 e 3 para o parâmetro 'mes_contabil'.")
+		erros = append(erros, "Por favor, forneça um mês contábil válido entre 1 e 3 para o parâmetro 'mes_contabil'.")
 	}
 
-	if err := valueBinder.MustUint32("codigo_poder_orgao", &parametros.CodigoPoderOrgao).BindError(); err != nil {
-		errors = append(errors, "Por favor, forneça o código do poder/órgão SICONFI no parâmetro 'codigo_poder_orgao'.")
+	if err := valueBinder.MustInt("codigo_poder_orgao", &parametros.CodigoPoderOrgao).BindError(); err != nil {
+		erros = append(erros, "Por favor, forneça o código do poder/órgão SICONFI no parâmetro 'codigo_poder_orgao'.")
 	}
 
 	if parametros.MesReferencia != 12 && parametros.MesContabil != 1 {
-		errors = append(errors, "A opção de emissão do relatório para o mês contábil 2 (apuração) ou 3 (todos) só está disponível para o mês de referência 12 (dezembro).")
+		erros = append(erros, "A opção de emissão do relatório para o mês contábil 2 (apuração) ou 3 (todos) só está disponível para o mês de referência 12 (dezembro).")
 	}
 
-	if len(errors) > 0 {
-		return ErroValidacaoParametro(errors)
+	if len(erros) > 0 {
+		return ErroValidacaoParametro(erros)
 	}
 	/*** Validação dos Parâmetros ***/
 

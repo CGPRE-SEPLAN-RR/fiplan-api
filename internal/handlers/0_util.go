@@ -33,7 +33,7 @@ func ErroValidacaoParametro(mensagem []string) *echo.HTTPError {
 /*** Erro ***/
 
 /*** Dados Estáticos ***/
-var MesParaNome map[uint8]string = map[uint8]string{
+var MesParaNome map[int]string = map[int]string{
 	1:  "JANEIRO",
 	2:  "FEVEREIRO",
 	3:  "MARCO",
