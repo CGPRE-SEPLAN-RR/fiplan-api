@@ -1,10 +1,16 @@
-package server
+package handlers
 
 import (
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
+
+/*** Validação ***/
+var Validate = validator.New()
+
+/*** Validação ***/
 
 /*** Erro ***/
 type Erro echo.HTTPError // @name Erro

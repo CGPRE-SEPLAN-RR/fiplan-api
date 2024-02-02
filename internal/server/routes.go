@@ -4,15 +4,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	_ "github.com/CGPRE-SEPLAN-RR/fiplan-api/docs"
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/handlers"
 )
-
-var Validate = validator.New()
 
 // @title API do FIPLAN
 // @version 0.0.0-alpha
@@ -32,9 +30,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 		},
 	}))
 
-	e.GET("/conta", s.ContaContabilHandler)
+	e.GET("/conta", handlers.ContaContabilHandler)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
-	e.GET("/relatorio/fip_215", s.RelatorioFIP215Handler)
+	e.GET("/relatorio/fip_215", handlers.RelatorioFIP215Handler)
+	e.GET("/relatorio/fip_215m", handlers.RelatorioFIP215MHandler)
 
 	return e
 }

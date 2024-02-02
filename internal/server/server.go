@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/database"
+	"github.com/CGPRE-SEPLAN-RR/fiplan-api/internal/handlers"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -19,9 +19,12 @@ type Server struct {
 
 func NewServer() *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
+
+	handlers.StartDB()
+
 	NewServer := &Server{
 		port: port,
-		db:   database.New(),
+		db:   handlers.Db,
 	}
 
 	server := &http.Server{

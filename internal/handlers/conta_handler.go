@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ type relatorioContas struct {
 // @Failure     400           {object} Erro
 // @Failure     500           {object} Erro
 // @Router      /conta [get]
-func (s *Server) ContaContabilHandler(c echo.Context) error {
+func ContaContabilHandler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
 		AnoExercicio uint16
@@ -83,7 +83,7 @@ func (s *Server) ContaContabilHandler(c echo.Context) error {
 
 	compactSqlQuery := strings.Join(strings.Fields(sqlQuery.String()), " ")
 	log.Printf("ContaContabilHandler: %s", compactSqlQuery)
-	rows, err := s.db.Query(compactSqlQuery)
+	rows, err := Db.Query(compactSqlQuery)
 
 	sqlQuery.Reset()
 

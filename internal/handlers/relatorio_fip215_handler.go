@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"fmt"
@@ -55,7 +55,7 @@ type relatorioFIP215 struct {
 // @Failure     400                              {object} Erro
 // @Failure     500                              {object} Erro
 // @Router      /relatorio/fip_215 [get]
-func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
+func RelatorioFIP215Handler(c echo.Context) error {
 	/*** Parâmetros ***/
 	parametros := struct {
 		// FIPLAN
@@ -237,7 +237,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 
 	compactSqlQuery := strings.Join(strings.Fields(sqlQuery.String()), " ")
 	log.Printf("RelatorioFIP215Handler: %s", compactSqlQuery)
-	rows, err := s.db.Query(compactSqlQuery)
+	rows, err := Db.Query(compactSqlQuery)
 
 	sqlQuery.Reset()
 
@@ -480,7 +480,7 @@ func (s *Server) RelatorioFIP215Handler(c echo.Context) error {
 
 	compactSqlQuery = strings.Join(strings.Fields(sqlQuery.String()), " ")
 	log.Printf("RelatorioFIP215Handler: %s", compactSqlQuery)
-	rows, err = s.db.Query(compactSqlQuery)
+	rows, err = Db.Query(compactSqlQuery)
 
 	if err != nil {
 		log.Printf("RelatorioFIP215Handler: %v", err)
